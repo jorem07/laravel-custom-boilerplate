@@ -7,11 +7,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 // Route::middleware('log.route')->post('/auth/login', [AuthController::class, 'login'])->name('api.login');
-// Route::middleware('log.route')->post('/auth/register', [AuthController::class, 'register'])->name('api.register');
+Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthController::class, 'register'])->name('api.register');
 
 Route::prefix('auth')->middleware(['log.route'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('logout', [AuthController::class, 'logout']);
     Route::post('register', [AuthController::class, 'register']);
 });
 

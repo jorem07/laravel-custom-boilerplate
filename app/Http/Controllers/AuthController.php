@@ -30,7 +30,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): string
     {
-        $data = $this->authRepository->logout($request);
+        $data = $this->AuthService->logout($request);
         return response()->json($data);
     }
 

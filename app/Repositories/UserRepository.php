@@ -34,7 +34,7 @@ class UserRepository
             $payload['password'] = Hash::make($payload['password']);
 
             $data = User::create($payload);
-            $data->assignRole($payload['role']);
+            $data->assign($payload['role']);
 
             $data->load('roles');
 

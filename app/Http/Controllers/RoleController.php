@@ -23,7 +23,7 @@ class RoleController extends Controller
 
     public function store(Request $request) : JsonResponse
     {
-        $payload = $request->all();
+        $payload = $request->validate(['name' => 'required|unique:roles,name']);
         $data = $this->roleRepository->store($payload);
         return response()->json(compact('data'));
     }

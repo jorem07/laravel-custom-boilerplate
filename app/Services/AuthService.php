@@ -83,6 +83,7 @@ class AuthService
 
     public function register($payload)
     {
+        // TODO: User register with Email OTP
         $payload['password'] = Hash::make($payload['password']);
         $payload['status'] = false;
         $payload['allow_login'] = false;
