@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -83,13 +85,54 @@ class AuthService
 
     public function register($payload)
     {
+        // TODO: User register with Email OTP
         $payload['password'] = Hash::make($payload['password']);
         $payload['status'] = false;
         $payload['allow_login'] = false;
         
         $data = User::create($payload);
 
+        $data->notify(new \App\Notifications\VerifyOTP());
 
         return $data;
+    }
+
+    public function resend($payload)
+    {
+        $data = User::where('email', $payload['email'])->first();
+
+        $data->notify(new \App\Notifications\VerifyOTP());
+
+        return ['message' => 'Email sent successfully!'];
+    }
+
+    public function verifyOtp($request)
+    {
+
+        $cachedOtp = Cache::get('email_otp_'.$request['user_id']);
+
+        if (!$cachedOtp) {
+            return response()->json(['message' => 'OTP expired or not found'], 400);
+        }
+
+        if ($cachedOtp != $request['otp']) {
+            return response()->json(['message' => 'Invalid OTP'], 400);
+        }
+
+        // Mark email verified
+        $user = User::find($request['user_id']);
+        
+        $user->update([
+            'status' => true,
+            'active' => true
+        ]);
+
+        $user->markEmailAsVerified();
+        $user->assign('customer');
+
+        // Clear OTP
+        Cache::forget('email_otp_'.$request['user_id']);
+
+        return response()->json(['message' => 'Email verified successfully']);
     }
 }
