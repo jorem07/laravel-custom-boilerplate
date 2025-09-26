@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notifiable;
 
 class Role extends Model
 {
-    use HasFactory, Notifiable;
+    use HasFactory;
 
     protected $fillable = [
         'name',
