@@ -3,25 +3,49 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 
 class UserRepository
 {
 
-    public function index($request)
+    public function index($payload)
     {
-        $data = User::all();
-        $data->load(['roles']);
+        $status = isset($payload['status'])  
+                  ? [$payload['status']] 
+                  : [true, false];
+        
+        $roles = $payload['roles'] ?? [];
+
+        $data = User::with('roles:id,name,title')
+            ->whereIn('status', $status)
+            ->where(function($q) use ($roles) {
+                $q->whereHas('roles', function($sub) use ($roles) {
+                    if (!empty($roles)) {
+                        $sub->whereIn('name', $roles);
+                    }
+                    $sub->whereNot('name', 'super-admin');
+                });
+            })
+            ->get();
+
         
         return $data;
     }
 
     public function show($id)
     {
-        // return Role::find($id);
+        $data = User::find($id);
+
+        if($data){
+            $data->load(['roles']);
+        }
+
+        return $data;
     }
 
     public function store($payload)
@@ -36,23 +60,43 @@ class UserRepository
             $data = User::create($payload);
             $data->assign($payload['role']);
 
-            $data->load('roles');
 
             DB::commit();
-            return $data;
+            return $this->show($data->id);
+
         } catch (Exception $e) {
             DB::rollBack();
             throw $e;
         }
     }
 
-    public function update($id, array $data)
+    public function update($id, $payload)
     {
-        // return Role::where('id', $id)->update($data);
+        if(isset($payload['password'])){
+            $payload['password'] = Hash::make($payload['password']);
+        }
+        $data = User::find($id);
+
+        $role = $payload['role'] ?? null;
+        unset($payload['role']);
+
+        $data->update($payload);
+        
+        if($role){
+            $data->roles()->detach();
+
+            // assign the new role
+            Bouncer::assign($role)->to($data);
+        }
+
+        return $this->show($id);
+        
     }
 
     public function delete($id)
     {
-        // return Role::destroy($id);
+        $data = User::where('id', $id)->update(['deleted_at' => Carbon::now()]);
+
+        return ['message' => 'Data has successfully deleted.'];
     }
 }

@@ -1,0 +1,45 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Repositories\{{ class }}Repository;
+use Illuminate\Http\JsonResponse;
+use App\Http\Requests\{{ class }}\Index;
+use App\Http\Requests\{{ class }}\Show;
+use App\Http\Requests\{{ class }}\Store;
+use App\Http\Requests\{{ class }}\Update;
+
+class {{ class }}Controller extends Controller
+{
+    protected {{ class }}Repository ${{ subname }}Repository;
+    public function __construct({{ class }}Repository ${{ subname }}Repository)
+    {
+         $this->{{ subname }}Repository = ${{ subname }}Repository;
+    }
+
+    public function index(Index $request) : JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->{{ subname }}Repository->index($payload);
+
+        return response()->json(compact('data'));
+    }
+
+    public function show($id, Show $request) : JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->{{ subname }}Repository->show($id, $payload);
+
+        return response()->json(compact('data'));
+    }
+
+    // public function store(Store $request) : JsonResponse
+    // {
+        
+    // }
+
+    // public function update($id, Update $request) : JsonResponse
+    // {
+        
+    // }
+}

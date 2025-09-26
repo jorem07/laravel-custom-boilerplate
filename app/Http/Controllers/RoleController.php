@@ -39,4 +39,17 @@ class RoleController extends Controller
 
         return response()->json(compact('data'));
     }
+
+    public function update($id, Request $request) : JsonResponse
+    {
+        $payload = $request->validate([
+                            'ability_id' => 'nullable|array|exists:abilities,id',
+                            'name'       => 'nullable|unique:roles,name',
+                            'title'      => 'required_with:name|unique:roles,title',
+                        ]);
+
+        $data = $this->roleRepository->update($id, $payload);
+
+        return response()->json(compact('data'));
+    }
 }

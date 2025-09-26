@@ -1,0 +1,41 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Models\{{ class }};
+
+class {{ class }}Repository
+{
+    protected {{ class }} $model;
+
+
+    public function index($payload)
+    {
+        $data = {{ class }}::all();
+        
+        return $data;
+    }
+
+    public function show($id, $payload)
+    {
+        $data = {{ class }}::find($id);
+
+        return $data;
+    }
+
+//    public function store($payload)
+//    {
+//        // override parent method here;
+//    }
+//
+//    public function update($id, $payload)
+//    {
+//        // override parent method here;
+//    }
+//
+//    public function delete($id)
+//    {
+//        // override parent method here;
+//    }
+//
+}

@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\UserController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -12,6 +13,8 @@ Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthCont
 Route::prefix('auth')->middleware(['log.route'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
+    Route::post('register/resend', [AuthController::class, 'resend']);
+    Route::post('register/verify-otp', [AuthController::class, 'verifyOtp']);
 });
 
 Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
@@ -41,8 +44,6 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
                 Route::controller(app($controller['controller'])::class)->group(function () use ($controller, $name_case) {
 
                     Route::match((['GET', 'POST']), $controller['slug'], 'index')->name($controller['slug'] . '.index');
-                    Route::post($controller['slug'] . '/create', 'create')->name($controller['slug'] . '.create');
-                    Route::match((['GET', 'POST']), $controller['slug'] . '/edit' . '/{' . $controller['name'] . '}', 'edit')->name($controller['slug'] . '.edit');
                     Route::post($controller['slug'] . '/store', 'store')->name($controller['slug'] . '.store');
                     Route::match((['GET', 'POST']), $controller['slug'] . '/show/{' . $controller['name'] . '}', 'show')->name($controller['slug'] . '.show');
                     Route::match(['PUT', 'PATCH'], $controller['slug'] . '/{' . $controller['name'] . '}', 'update')->name($controller['slug'] . '.update');
@@ -51,7 +52,7 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
                     // if the model uses soft-deletes enable these routes.
                     $modelClass = 'App\\Models\\' . $name_case;
                     if (class_exists($modelClass) && in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses($modelClass))) {
-                        Route::delete($controller['slug'] . '/delete/{' . $controller['name'] . '}', 'destroy')->name($controller['slug'] . '.destroy');
+                        Route::delete($controller['slug'] . '/delete/{' . $controller['name'] . '}', 'delete')->name($controller['slug'] . '.delete');
                         // disabled at the moment
                         Route::post($controller['slug'] . '/{' . $controller['name'] . '}' . '/restore', 'restore')->name($controller['slug'] . '.restore');
                     }
@@ -61,3 +62,15 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
     }
 
 });
+
+Route::middleware(['guest'])->post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+
+//TODO: Move it in a Controller
+Route::get('/reset-password/{token}', function (string $token) {
+    return response()->json(['token' => $token]);
+})->middleware('guest')->name('password.reset');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return response()->json(['message' => 'Email verified successfully.']);
+})->middleware(['auth:sanctum', 'signed'])->name('verification.verify');

@@ -22,18 +22,33 @@ class RoleRepository
         return $data;
     }
 
-    public function store($request)
+    public function store($payload)
     {
-        $data = Role::create($request);
+        $data = Role::create($payload);
 
-        Bouncer::allow($data)->to('*');
+        $data->abilities()->sync($payload['ability_id']);
         
-        return $data;
+        return $this->show($data->id);
     }
 
-    public function update($id, array $data)
+    public function update($id, $payload)
     {
-        // return Role::where('id', $id)->update($data);
+        $data = Role::find($id);
+
+        if(isset($payload['name'])){
+            $data->update([
+                'name'  => $payload['name'],
+                'title' => $payload['title']
+            ]);
+        }
+
+        if(isset($payload['ability_id'])){
+            $data->abilities()->detach();
+            $data->abilities()->sync($payload['ability_id']);
+        }
+
+        return $this->show($id);
+        
     }
 
     public function delete($id)
