@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Role;
+use App\Http\Requests\Role\Delete;
+use App\Http\Requests\Role\Index;
+use App\Http\Requests\Role\Show;
+use App\Http\Requests\Role\Store;
+use App\Http\Requests\Role\Update;
+
 use App\Repositories\RoleRepository;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
@@ -14,42 +18,44 @@ class RoleController extends Controller
     {
         $this->roleRepository = $roleRepository;
     }
-    public function index(Request $request) : JsonResponse
+    public function index(Index $request) : JsonResponse
     {
-        $data = $this->roleRepository->index($request);
-        
-        return response()->json(compact('data'));
+        $payload = $request->validated();
+        $data = $this->roleRepository->index($payload);
+        return $this->roleRepository->getJsonResponse($data);
     }
 
-    public function store(Request $request) : JsonResponse
+    public function store(Store $request) : JsonResponse
     {
         $payload = $request->validate(['name' => 'required|unique:roles,name']);
         $data = $this->roleRepository->store($payload);
-        return response()->json(compact('data'));
+        return $this->roleRepository->getJsonResponse($data);
     }
 
-    public function show($id) : JsonResponse
+    public function show($id, Show $request) : JsonResponse
     {
-        $payload = validator(
-                        ['id' => $id],
-                        ['id' => 'required|integer|exists:roles,id']
-                    )->validate();
+        $payload = $request->validated();
         
-        $data = $this->roleRepository->show($payload['id']);
+        $data = $this->roleRepository->show($id);
 
-        return response()->json(compact('data'));
+        return $this->roleRepository->getJsonResponse($data);
     }
 
-    public function update($id, Request $request) : JsonResponse
+    public function update($id, Update $request) : JsonResponse
     {
-        $payload = $request->validate([
-                            'ability_id' => 'nullable|array|exists:abilities,id',
-                            'name'       => 'nullable|unique:roles,name',
-                            'title'      => 'required_with:name|unique:roles,title',
-                        ]);
+        $payload = $request->validated();
 
         $data = $this->roleRepository->update($id, $payload);
 
-        return response()->json(compact('data'));
+        return $this->roleRepository->getJsonResponse($data);
+    }
+
+    public function delete($id, Delete $request) : JsonResponse
+    {
+        $payload = $request->validated();
+        
+        $data = $this->roleRepository->delete($id);
+
+        return $this->roleRepository->getJsonResponse($data);
     }
 }

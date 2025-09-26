@@ -3,24 +3,57 @@
 namespace {{ namespace }};
 
 use App\Models\{{ class }};
+use App\Traits\QueryGenerator;
 
 class {{ class }}Repository
 {
+    use QueryGenerator;
+
     protected {{ class }} $model;
-
-
+    
+    public function __construct({{ class }} $model)
+    {
+        $this->model = $model;
+    }
+    
     public function index($payload)
     {
-        $data = {{ class }}::all();
+
+        $search = $payload['search'] ?? null;
+        $skip = $payload['skip'] ?? null;
+        $take = $payload['take'] ?? null;
+
+        $data = $this->model;
+
+        $total = $data->count();
+        $list = $data->skip($skip)->take($take)->get();
         
-        return $data;
+        return [
+            'message' => 'These are the results.',
+            'error' => null,
+            'current_page' => $take > 0 ? intval($skip / $take) + 1 : 1,
+            'from' => $skip + 1,
+            'to' => min(($skip + $take), $total),
+            'skip' => $skip,
+            'take' => $take,
+            'total' => $total,
+            'body' => $list
+        ];
     }
 
     public function show($id, $payload)
     {
-        $data = {{ class }}::find($id);
+        $data = $this->model->find($id);
 
-        return $data;
+        return [
+            'message' => 'Showing Data.',
+            'body' => $data
+        ];
+    }
+
+    public function store($payload)
+    {
+        // override parent method here;
     }
 
     public function update($id, $payload)

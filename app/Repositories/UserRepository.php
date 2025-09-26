@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use App\Traits\QueryGenerator;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,14 @@ use Silber\Bouncer\BouncerFacade as Bouncer;
 
 class UserRepository
 {
+    use QueryGenerator;
+
+    protected User $model;
+    
+    public function __construct(User $model)
+    {
+        $this->model = $model;
+    }
 
     public function index($payload)
     {
@@ -20,8 +29,18 @@ class UserRepository
                   : [true, false];
         
         $roles = $payload['roles'] ?? [];
+        
+        $search = $payload['search'] ?? null;
+        $skip = $payload['skip'] ?? null;
+        $take = $payload['take'] ?? null;
 
-        $data = User::with('roles:id,name,title')
+        $data = $this->model->with('roles:id,name,title')
+            ->where(function($q) use($search){
+                if($search){
+                    $q->whereRaw("UPPER(CONCAT(first_name, ' ', last_name)) LIKE ?", ["%" . strtoupper($search) . "%"])
+                    ->orWhereRaw("UPPER(CONCAT(last_name, ' ', first_name)) LIKE ?", ["%" . strtoupper($search) . "%"]);
+                }
+            })
             ->whereIn('status', $status)
             ->where(function($q) use ($roles) {
                 $q->whereHas('roles', function($sub) use ($roles) {
@@ -30,22 +49,37 @@ class UserRepository
                     }
                     $sub->whereNot('name', 'super-admin');
                 });
-            })
-            ->get();
-
+            });
         
-        return $data;
+        $total = $data->count();
+        $list = $data->skip($skip)->take($take)->get();
+        
+        
+        return [
+            'message' => 'These are the results.',
+            'error' => null,
+            'current_page' => $take > 0 ? intval($skip / $take) + 1 : 1,
+            'from' => $skip + 1,
+            'to' => min(($skip + $take), $total),
+            'skip' => $skip,
+            'take' => $take,
+            'total' => $total,
+            'body' => $list
+        ];
     }
 
     public function show($id)
     {
-        $data = User::find($id);
+        $data = $this->model->find($id);
 
         if($data){
             $data->load(['roles']);
         }
 
-        return $data;
+        return [
+            'message' => 'Showing Data.',
+            'body' => $data
+        ];
     }
 
     public function store($payload)
@@ -57,7 +91,7 @@ class UserRepository
         try {
             $payload['password'] = Hash::make($payload['password']);
 
-            $data = User::create($payload);
+            $data = $this->model->create($payload);
             $data->assign($payload['role']);
 
 
@@ -75,7 +109,7 @@ class UserRepository
         if(isset($payload['password'])){
             $payload['password'] = Hash::make($payload['password']);
         }
-        $data = User::find($id);
+        $data = $this->model->find($id);
 
         $role = $payload['role'] ?? null;
         unset($payload['role']);
@@ -95,7 +129,7 @@ class UserRepository
 
     public function delete($id)
     {
-        $data = User::where('id', $id)->update(['deleted_at' => Carbon::now()]);
+        $data = $this->model->where('id', $id)->update(['deleted_at' => Carbon::now()]);
 
         return ['message' => 'Data has successfully deleted.'];
     }

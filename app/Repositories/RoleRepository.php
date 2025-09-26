@@ -2,24 +2,49 @@
 
 namespace App\Repositories;
 
+use App\Traits\QueryGenerator;
+use Carbon\Carbon;
 use Silber\Bouncer\Database\Role;
 use Silber\Bouncer\BouncerFacade as Bouncer;
 
 
 class RoleRepository
 {
-    public function index($request)
+    use QueryGenerator;
+
+    public function index($payload)
     {
-        $data = Role::withCount('abilities')->get();
+        $search = $payload['search'] ?? null;
+        $skip = $payload['skip'] ?? null;
+        $take = $payload['take'] ?? null;
+
+        $data = Role::withCount('abilities');
         
-        return $data;
+        $total = $data->count();
+        $list = $data->skip($skip)->take($take)->get();
+        
+        
+        return [
+            'message' => 'These are the results.',
+            'error' => null,
+            'current_page' => $take > 0 ? intval($skip / $take) + 1 : 1,
+            'from' => $skip + 1,
+            'to' => min(($skip + $take), $total),
+            'skip' => $skip,
+            'take' => $take,
+            'total' => $total,
+            'body' => $list
+        ];
     }
 
     public function show($id)
     {   
         $data = Role::find($id);
         $data->load('abilities');
-        return $data;
+        return [
+            'message' => 'Showing Data.',
+            'body' => $data
+        ];
     }
 
     public function store($payload)
@@ -53,6 +78,8 @@ class RoleRepository
 
     public function delete($id)
     {
-        // return Role::destroy($id);
+        $data = Role::where('id', $id)->update(['deleted_at' => Carbon::now()]);
+
+        return ['message' => 'Data has successfully deleted.'];
     }
 }
