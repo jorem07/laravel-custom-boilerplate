@@ -58,7 +58,7 @@ trait QueryGenerator
         ];
     }
 
-    public function show($id, $payload) : array
+    public function show($id, $payload = []) : array
     {
         $data = $this->model->find($id);
 

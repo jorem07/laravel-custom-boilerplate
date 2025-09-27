@@ -6,23 +6,30 @@ trait SearchGenerator
 {
     public function scopeSearchColumns($query, array $searches)
     {
-        return $query->when(!empty($searches), function ($q) use ($searches) {
-            $q->where(function ($sub) use ($searches) {
-                foreach ($searches as $search) {
-                    if (
-                        !empty($search['column']) &&
-                        isset($search['condition']) &&
-                        $search['condition'] !== ''
-                    ) {
-                        $column = $search['column'];
-                        $value  = strtoupper($search['condition']);
+        $excluded = ['email','password'];
 
-                        $sub->orWhereRaw("UPPER($column) LIKE ?", ["%{$value}%"]);
+        $filteredSearches = array_filter($searches, function ($search) use ($excluded) {
+            return !in_array($search['key'] ?? '', $excluded, true);
+        });
+
+        return $query->when(!empty($filteredSearches), function ($q) use ($filteredSearches) {
+            $q->where(function ($sub) use ($filteredSearches) {
+                foreach ($filteredSearches as $search) {
+                    if (
+                        !empty($search['key']) &&
+                        isset($search['value']) &&
+                        $search['value'] !== ''
+                    ) {
+                        $key = $search['key'];
+                        $value  = strtoupper($search['value']);
+
+                        $sub->orWhereRaw("UPPER($key) LIKE ?", ["%{$value}%"]);
                     }
                 }
             });
         });
     }
+
 
     public function scopeFullSearch($query, ?string $term, array $searchables = [])
     {
@@ -30,18 +37,26 @@ trait SearchGenerator
             return $query;
         }
 
+        $excluded = ['email','password'];
+        $allowedSearchables = array_values(array_diff($searchables, $excluded));
+
+        if (empty($allowedSearchables)) {
+            return $query;
+        }
+
         $tokens = explode(' ', $term);
 
-        return $query->where(function ($q) use ($tokens, $searchables) {
+        return $query->where(function ($q) use ($tokens, $allowedSearchables) {
             foreach ($tokens as $token) {
                 $token = strtoupper($token);
                 $q->whereRaw(
-                    '(' . implode(' OR ', array_map(fn($col) => "UPPER($col) LIKE ?", $searchables)) . ')',
-                    array_fill(0, count($searchables), "%{$token}%")
+                    '(' . implode(' OR ', array_map(fn($col) => "UPPER($col) LIKE ?", $allowedSearchables)) . ')',
+                    array_fill(0, count($allowedSearchables), "%{$token}%")
                 );
             }
         });
     }
+
 
 
     private static function concatExpression(array $columns, string $separator = ' '): string

@@ -16,7 +16,9 @@ class Index extends FormRequest
 
     public function rules(): array
     {
-        $validate = [];
+        $validate = [
+            'status' => 'nullable|boolean'
+        ];
         
         return array_merge($this->payloadTaits(), $validate);
     }
