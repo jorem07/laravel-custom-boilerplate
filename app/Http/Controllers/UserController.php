@@ -14,6 +14,8 @@ use App\Http\Requests\User\Update;
 class UserController extends Controller
 {
     protected UserRepository $userRepository;
+
+    protected array $searchable = ['last_name','first_name', 'middle_name', 'email'];
     
     public function __construct(UserRepository $userRepository)
     {
@@ -24,7 +26,7 @@ class UserController extends Controller
     {
         $payload = $request->validated();
 
-        $data = $this->userRepository->index($payload);
+        $data = $this->userRepository->index($payload, $this->searchable);
 
         return $this->userRepository->getJsonResponse($data);
     }

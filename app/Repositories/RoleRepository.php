@@ -2,23 +2,34 @@
 
 namespace App\Repositories;
 
+use App\Models\Role;
 use App\Traits\QueryGenerator;
 use Carbon\Carbon;
-use Silber\Bouncer\Database\Role;
-use Silber\Bouncer\BouncerFacade as Bouncer;
-
 
 class RoleRepository
 {
     use QueryGenerator;
+    
+    protected Role $model;
 
-    public function index($payload)
+    public function __construct(Role $model)
     {
-        $search = $payload['search'] ?? null;
+        $this->model = $model;
+    }
+
+    public function index($payload, array $searchable = [])
+    {
+        $search = $payload['search'] ?? [];
+        $full_search = $payload['full_search'] ?? null;
+
+
         $skip = $payload['skip'] ?? null;
         $take = $payload['take'] ?? null;
 
-        $data = Role::withCount('abilities');
+        $data = $this->model->withCount('abilities')->newQuery();
+
+        $data->searchColumns($search);
+        $data->fullSearch($full_search, $searchable);
         
         $total = $data->count();
         $list = $data->skip($skip)->take($take)->get();
@@ -33,13 +44,14 @@ class RoleRepository
             'skip' => $skip,
             'take' => $take,
             'total' => $total,
-            'body' => $list
+            'body' => $list,
+            'searchable' => $searchable
         ];
     }
 
     public function show($id)
     {   
-        $data = Role::find($id);
+        $data = $this->model->find($id);
         $data->load('abilities');
         return [
             'message' => 'Showing Data.',
@@ -49,7 +61,7 @@ class RoleRepository
 
     public function store($payload)
     {
-        $data = Role::create($payload);
+        $data = $this->model->create($payload);
 
         $data->abilities()->sync($payload['ability_id']);
         
@@ -58,7 +70,7 @@ class RoleRepository
 
     public function update($id, $payload)
     {
-        $data = Role::find($id);
+        $data = $this->model->find($id);
 
         if(isset($payload['name'])){
             $data->update([
@@ -78,7 +90,7 @@ class RoleRepository
 
     public function delete($id)
     {
-        $data = Role::where('id', $id)->update(['deleted_at' => Carbon::now()]);
+        $data = $this->model->where('id', $id)->update(['deleted_at' => Carbon::now()]);
 
         return ['message' => 'Data has successfully deleted.'];
     }

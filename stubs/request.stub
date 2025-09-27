@@ -4,18 +4,40 @@ namespace {{ namespace }};
 
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
+use App\Traits\PayloadTrait;
 
+/**
+ * {{ class }}
+ *
+ * This request class handles validation and authorization for the request.
+ * You can override the authorize() and rules() methods as needed.
+ */
 class {{ class }} extends FormRequest
 {
+    use PayloadTrait;
 
+    /**
+     * Determine if the user is authorized to make this request.
+     * Override this method to implement custom authorization logic.
+     *
+     * @return bool
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     * Override this method to define custom validation rules.
+     *
+     * @return array
+     */
     public function rules(): array
     {
-
-        return [];
+        // Add your validation rules here
+        $validate = [];
+        
+        return array_merge($this->payloadTaits(), $validate);
     }
 }

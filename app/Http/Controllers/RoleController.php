@@ -14,14 +14,17 @@ use Illuminate\Http\JsonResponse;
 class RoleController extends Controller
 {
     protected RoleRepository $roleRepository;
+    protected array $searchable = ['name'];
+
     public function __construct(RoleRepository $roleRepository)
     {
         $this->roleRepository = $roleRepository;
     }
+    
     public function index(Index $request) : JsonResponse
     {
         $payload = $request->validated();
-        $data = $this->roleRepository->index($payload);
+        $data = $this->roleRepository->index($payload, $this->searchable);
         return $this->roleRepository->getJsonResponse($data);
     }
 

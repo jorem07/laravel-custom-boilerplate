@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\SearchGenerator;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,7 +14,7 @@ use Silber\Bouncer\Database\HasRolesAndAbilities;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRolesAndAbilities, SoftDeletes;
+    use HasFactory, Notifiable, HasApiTokens, HasRolesAndAbilities, SoftDeletes, SearchGenerator;
 
     /**
      * The attributes that are mass assignable.
@@ -54,5 +55,5 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
-    
+
 }

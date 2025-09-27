@@ -22,7 +22,7 @@ class UserRepository
         $this->model = $model;
     }
 
-    public function index($payload)
+    public function index($payload, array $searchable = [])
     {
         $status = isset($payload['status'])  
                   ? [$payload['status']] 
@@ -30,17 +30,14 @@ class UserRepository
         
         $roles = $payload['roles'] ?? [];
         
-        $search = $payload['search'] ?? null;
+        $search = $payload['search'] ?? [];
+        $full_search = $payload['full_search'] ?? null;
+
         $skip = $payload['skip'] ?? null;
         $take = $payload['take'] ?? null;
+        
 
         $data = $this->model->with('roles:id,name,title')
-            ->where(function($q) use($search){
-                if($search){
-                    $q->whereRaw("UPPER(CONCAT(first_name, ' ', last_name)) LIKE ?", ["%" . strtoupper($search) . "%"])
-                    ->orWhereRaw("UPPER(CONCAT(last_name, ' ', first_name)) LIKE ?", ["%" . strtoupper($search) . "%"]);
-                }
-            })
             ->whereIn('status', $status)
             ->where(function($q) use ($roles) {
                 $q->whereHas('roles', function($sub) use ($roles) {
@@ -49,8 +46,11 @@ class UserRepository
                     }
                     $sub->whereNot('name', 'super-admin');
                 });
-            });
+            })->newQuery();
         
+        $data->searchColumns($search);
+        $data->fullSearch($full_search, $searchable);
+
         $total = $data->count();
         $list = $data->skip($skip)->take($take)->get();
         
@@ -64,7 +64,8 @@ class UserRepository
             'skip' => $skip,
             'take' => $take,
             'total' => $total,
-            'body' => $list
+            'body' => $list,
+            'searchable' => $searchable
         ];
     }
 

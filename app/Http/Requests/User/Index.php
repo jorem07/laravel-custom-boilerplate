@@ -2,12 +2,13 @@
 
 namespace App\Http\Requests\User;
 
+use App\Traits\PayloadTrait;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 
 class Index extends FormRequest
 {
-
+    use PayloadTrait;
     public function authorize(): bool
     {
         return true;
@@ -15,13 +16,8 @@ class Index extends FormRequest
 
     public function rules(): array
     {
-
-        return [
-            'status'        => 'nullable|boolean',
-            'roles'         => 'nullable|array',
-            'search'        => 'nullable',
-            'skip'          => 'nullable|numeric',
-            'take'          => 'nullable|numeric'
-        ];
+        $validate = [];
+        
+        return array_merge($this->payloadTaits(), $validate);
     }
 }

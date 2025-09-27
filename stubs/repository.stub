@@ -5,64 +5,29 @@ namespace {{ namespace }};
 use App\Models\{{ class }};
 use App\Traits\QueryGenerator;
 
+/**
+ * {{ class }}Repository
+ *
+ * This repository provides a base implementation for {{ class }} data access.
+ * You can override or extend this class to customize query logic or add new methods.
+ */
 class {{ class }}Repository
 {
     use QueryGenerator;
 
+    // The Category model instance.
     protected {{ class }} $model;
     
+    /**
+     * Constructor.
+     *
+     * @param {{ class }} $model The {{ class }} model instance.
+     * You can override this constructor in a child class if needed.
+     */
     public function __construct({{ class }} $model)
     {
         $this->model = $model;
     }
-    
-    public function index($payload)
-    {
 
-        $search = $payload['search'] ?? null;
-        $skip = $payload['skip'] ?? null;
-        $take = $payload['take'] ?? null;
-
-        $data = $this->model;
-
-        $total = $data->count();
-        $list = $data->skip($skip)->take($take)->get();
-        
-        return [
-            'message' => 'These are the results.',
-            'error' => null,
-            'current_page' => $take > 0 ? intval($skip / $take) + 1 : 1,
-            'from' => $skip + 1,
-            'to' => min(($skip + $take), $total),
-            'skip' => $skip,
-            'take' => $take,
-            'total' => $total,
-            'body' => $list
-        ];
-    }
-
-    public function show($id, $payload)
-    {
-        $data = $this->model->find($id);
-
-        return [
-            'message' => 'Showing Data.',
-            'body' => $data
-        ];
-    }
-
-    public function store($payload)
-    {
-        // override parent method here;
-    }
-
-    public function update($id, $payload)
-    {
-        // override parent method here;
-    }
-
-    public function delete($id, $payload)
-    {
-        // override parent method here;
-    }
+    // You can override or add methods here to customize repository
 }

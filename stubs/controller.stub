@@ -13,6 +13,7 @@ use App\Http\Requests\{{ class }}\Delete;
 class {{ class }}Controller extends Controller
 {
     protected {{ class }}Repository ${{ subname }}Repository;
+    protected array $searchable = [];
     public function __construct({{ class }}Repository ${{ subname }}Repository)
     {
          $this->{{ subname }}Repository = ${{ subname }}Repository;
@@ -21,7 +22,7 @@ class {{ class }}Controller extends Controller
     public function index(Index $request) : JsonResponse
     {
         $payload = $request->validated();
-        $data = $this->{{ subname }}Repository->index($payload);
+        $data = $this->{{ subname }}Repository->index($payload, $this->searchable);
 
         return $this->{{ subname }}Repository->getJsonResponse($data);
     }
