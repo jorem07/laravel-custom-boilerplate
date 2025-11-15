@@ -28,7 +28,7 @@ class {{ class }}Controller extends Controller
         $payload = $request->validated();
         $data = $this->{{ subname }}Repository->index($payload, $this->searchable, $this->relation);
 
-        return $this->{{ subname }}Repository->getJsonResponse($data);
+        return $this->getJsonResponse($data);
     }
 
     public function show($id, Show $request) : JsonResponse
@@ -36,7 +36,7 @@ class {{ class }}Controller extends Controller
         $payload = $request->validated();
         $data = $this->{{ subname }}Repository->show($id, $payload, $this->relation);
 
-        return $this->{{ subname }}Repository->getJsonResponse($data);
+        return $this->getJsonResponse($data);
     }
 
     public function store(Store $request) : JsonResponse
@@ -44,7 +44,7 @@ class {{ class }}Controller extends Controller
         $payload = $request->validated();
         $data = $this->{{ subname }}Repository->store($payload, $this->relation);
 
-        return $this->{{ subname }}Repository->getJsonResponse($data);
+        return $this->getJsonResponse($data);
     }
 
     public function update($id, Update $request) : JsonResponse
@@ -52,7 +52,7 @@ class {{ class }}Controller extends Controller
         $payload = $request->validated();
         $data = $this->{{ subname }}Repository->update($id, $payload, $this->relation);
 
-        return $this->{{ subname }}Repository->getJsonResponse($data);
+        return $this->getJsonResponse($data);
     }
 
     public function delete($id, Delete $request) : JsonResponse
@@ -60,6 +60,6 @@ class {{ class }}Controller extends Controller
         $payload = $request->validated();
         $data = $this->{{ subname }}Repository->delete($id, $payload);
 
-        return $this->{{ subname }}Repository->getJsonResponse($data);
+        return $this->getJsonResponse($data);
     }
 }
