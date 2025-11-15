@@ -13,7 +13,11 @@ use App\Http\Requests\{{ class }}\Delete;
 class {{ class }}Controller extends Controller
 {
     protected {{ class }}Repository ${{ subname }}Repository;
+
     protected array $searchable = [];
+
+    protected array $relation = [];
+
     public function __construct({{ class }}Repository ${{ subname }}Repository)
     {
          $this->{{ subname }}Repository = ${{ subname }}Repository;
@@ -22,7 +26,7 @@ class {{ class }}Controller extends Controller
     public function index(Index $request) : JsonResponse
     {
         $payload = $request->validated();
-        $data = $this->{{ subname }}Repository->index($payload, $this->searchable);
+        $data = $this->{{ subname }}Repository->index($payload, $this->searchable, $this->relation);
 
         return $this->{{ subname }}Repository->getJsonResponse($data);
     }
@@ -30,7 +34,7 @@ class {{ class }}Controller extends Controller
     public function show($id, Show $request) : JsonResponse
     {
         $payload = $request->validated();
-        $data = $this->{{ subname }}Repository->show($id, $payload);
+        $data = $this->{{ subname }}Repository->show($id, $payload, $this->relation);
 
         return $this->{{ subname }}Repository->getJsonResponse($data);
     }
@@ -38,7 +42,7 @@ class {{ class }}Controller extends Controller
     public function store(Store $request) : JsonResponse
     {
         $payload = $request->validated();
-        $data = $this->{{ subname }}Repository->store($payload);
+        $data = $this->{{ subname }}Repository->store($payload, $this->relation);
 
         return $this->{{ subname }}Repository->getJsonResponse($data);
     }
@@ -46,7 +50,7 @@ class {{ class }}Controller extends Controller
     public function update($id, Update $request) : JsonResponse
     {
         $payload = $request->validated();
-        $data = $this->{{ subname }}Repository->update($id, $payload);
+        $data = $this->{{ subname }}Repository->update($id, $payload, $this->relation);
 
         return $this->{{ subname }}Repository->getJsonResponse($data);
     }
