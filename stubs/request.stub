@@ -14,7 +14,9 @@ use App\Traits\PayloadTrait;
  */
 class {{ class }} extends FormRequest
 {
-    use PayloadTrait;
+    use PayloadTrait {
+        PayloadTrait::prepareForValidation as payloadPrepareForValidation;
+    }
 
     /**
      * Determine if the user is authorized to make this request.
@@ -37,7 +39,21 @@ class {{ class }} extends FormRequest
     {
         // Add your validation rules here
         $validate = [];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:{{ subname }},id'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        $this->merge([
+            'id'    => $this->route('{{ subname }}')
+        ]);
     }
 }

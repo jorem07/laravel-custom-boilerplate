@@ -4,35 +4,56 @@ namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
+use App\Traits\PayloadTrait;
 
+/**
+ * Update
+ *
+ * This request class handles validation and authorization for the request.
+ * You can override the authorize() and rules() methods as needed.
+ */
 class Update extends FormRequest
 {
+    use PayloadTrait {
+        PayloadTrait::prepareForValidation as payloadPrepareForValidation;
+    }
 
+    /**
+     * Determine if the user is authorized to make this request.
+     * Override this method to implement custom authorization logic.
+     *
+     * @return bool
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     * Override this method to define custom validation rules.
+     *
+     * @return array
+     */
     public function rules(): array
     {
+        // Add your validation rules here
+        $validate = [];
 
-        return [
-            'id'            => 'required|integer|exists:users,id,deleted_at,NULL',
-            "first_name"    =>  "nullable",
-            "last_name"     =>  "nullable",
-            "middle_name"   =>  "nullable",
-            "email"         =>  "nullable|unique:users",
-            "allow_login"   =>  "nullable",
-            "status"        =>  "nullable",
-            "password"      =>  "nullable",
-            "role"          =>  "nullable|exists:roles,name"
-        ];
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:users,id'];
+        }
+        
+        return array_merge($this->payloadTaits(), $validate);
     }
 
-    protected function prepareForValidation(): void
+    public function prepareForValidation(): void
     {
+        $this->payloadPrepareForValidation();
+
         $this->merge([
-            'id' => $this->route('users'),
+            'id'    => $this->route('users')
         ]);
     }
 }

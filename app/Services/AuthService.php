@@ -8,13 +8,28 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthService
 {
     public function login($request): array
     {
         try {
+
+            // Checking for attempts
+            $key = $request['email'] . '|' . $request['ip'];
+            if (RateLimiter::tooManyAttempts($key, 5)) {
+                $seconds = RateLimiter::availableIn($key);
+                return [
+                    'message' => 'Too many attempts. Try again in ' . ceil($seconds / 60) . ' minutes.',
+                    'errors' => 'RateLimited'
+                ];
+            }
+
             if (Auth::attempt($request->only('email', 'password'))) {
+
+                // Clear attempts after successful login
+                RateLimiter::clear($key);
 
                 $user = Auth::user();
 
@@ -30,30 +45,32 @@ class AuthService
                             'ip_address' => $ip_address
                         ]);
 
-                    return ([
+                    return [
                         'message' => 'Logged in successfully.',
                         'user' => $user->load(['roles']),
                         'token' => $token->plainTextToken,
-                    ]);
-                } else {
-                    # Return verify account message if account is not verified
-                    return ([
-                        'message' => 'Please verify your account first.',
-                        'errors' => 'Error'
-                    ]);
+                    ];
                 }
+
+                return [
+                    'message' => 'Please verify your account first.',
+                    'errors' => 'Error'
+                ];
             }
 
-            # Return vague error message to prevent brute force attack
-            return ([
+            # here is the failed attempt lockout 
+            RateLimiter::hit($key, 300); #5 minutes
+
+            return [
                 'message' => 'Invalid login credentials.',
                 'errors' => 'Error'
-            ]);
+            ];
+
         } catch (\Throwable $throwable) {
-            return ([
+            return [
                 'message' => $throwable->getMessage(),
                 'errors' => 'Error'
-            ]);
+            ];
         }
     }
 

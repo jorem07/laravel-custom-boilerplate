@@ -102,6 +102,7 @@ class GenerateMultipleRequest extends Command
             'namespace' => "App\\Http\\Requests\\$model",
             'class' => ucfirst($method),
             'ability' => $ability,
+            'subname' => Str::plural(Str::snake($model))
         ];
 
         foreach ($replacements as $key => $value) {
