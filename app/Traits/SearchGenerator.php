@@ -43,13 +43,17 @@ trait SearchGenerator
                         [$relation, $column] = explode('.', $key, 2);
 
                         $sub->orWhereHas($relation, function ($rel) use ($column, $value) {
-                            $rel->where($column, 'ILIKE', "%{$value}%");
+                            if ($column === 'id' || ctype_digit((string) $value) || is_bool($value)) {
+                                $rel->where($column, $value);
+                            }else{
+                                $rel->where($column, 'ILIKE', "%{$value}%");
+                            }
                         });
                     } else {
                         if ($key === 'id' || ctype_digit((string) $value) || is_bool($value)) {
                             $sub->where($key, $value);
                         } else {
-                            $sub->orWhere($key, 'ILIKE', "%{$value}%");
+                            $sub->where($key, 'ILIKE', "%{$value}%");
                         }
                     }
                 }

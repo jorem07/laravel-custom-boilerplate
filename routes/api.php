@@ -47,15 +47,15 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
                     Route::post($controller['slug'] . '/store', 'store')->name($controller['slug'] . '.store');
                     Route::match((['GET', 'POST']), $controller['slug'] . '/show/{' . $controller['name'] . '}', 'show')->name($controller['slug'] . '.show');
                     Route::match(['PUT', 'PATCH'], $controller['slug'] . '/{' . $controller['name'] . '}', 'update')->name($controller['slug'] . '.update');
-                    Route::delete($controller['slug'] . '/force-delete/{' . $controller['name'] . '}', 'forceDelete')->name($controller['slug'] . '.force-delete');
+                    Route::delete($controller['slug'] . '/delete/{' . $controller['name'] . '}', 'delete')->name($controller['slug'] . '.delete');
 
                     // if the model uses soft-deletes enable these routes.
-                    $modelClass = 'App\\Models\\' . $name_case;
-                    if (class_exists($modelClass) && in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses($modelClass))) {
-                        Route::delete($controller['slug'] . '/delete/{' . $controller['name'] . '}', 'delete')->name($controller['slug'] . '.delete');
-                        // disabled at the moment
-                        Route::post($controller['slug'] . '/{' . $controller['name'] . '}' . '/restore', 'restore')->name($controller['slug'] . '.restore');
-                    }
+                    // $modelClass = 'App\\Models\\' . $name_case;
+                    // if (class_exists($modelClass) && in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses($modelClass))) {
+                    //     Route::delete($controller['slug'] . '/delete/{' . $controller['name'] . '}', 'delete')->name($controller['slug'] . '.delete');
+                    //     // disabled at the moment
+                    //     Route::post($controller['slug'] . '/{' . $controller['name'] . '}' . '/restore', 'restore')->name($controller['slug'] . '.restore');
+                    // }
                 });
             }
         }

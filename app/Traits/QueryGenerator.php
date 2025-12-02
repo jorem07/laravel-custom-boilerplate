@@ -39,7 +39,7 @@ trait QueryGenerator
                      })
                      ->get();
 
-        if ($list->isEmpty()) {
+        if($list->isEmpty() && !isset($payload['show'])){
             return [
                 'message' => 'No results found.',
                 'error' => null,
