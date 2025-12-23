@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Cache;
 
 // TODO: Refactor
 class AuthController extends Controller
@@ -46,10 +46,12 @@ class AuthController extends Controller
             "first_name"    =>  "required",
             "last_name"     =>  "required",
             "middle_name"   =>  "nullable",
-            "email"         =>  "required",
+            // "email"         =>  ["required","email",new DisposableEmail()],
+            "email"         => ['required', 'email'],
             "password"      =>  "required",
             "birthday"      =>  "required"
         ]);
+        
         
         $data = $this->AuthService->register($payload);
         if(isset($data['errors'])){
@@ -61,29 +63,6 @@ class AuthController extends Controller
         return response()->json([
             'message'=>$data['message'], 
         ], $data['status']);
-    }
-
-    public function resend(Request $request) : JsonResponse
-    {
-        $payload = $request->validate([
-            "email"         =>  "required|exists:users"
-        ]);
-        
-        $data = $this->AuthService->resend($payload);
-
-        return response()->json(['message'=>$data['message']], 200);
-    }
-
-    public function verifyOtp(Request $request) : JsonResponse
-    {
-        $payload = $request->validate([
-            'email' => 'required|exists:users,email',
-            'otp' => 'required|numeric'
-        ]);
-        
-        $data = $this->AuthService->verifyOtp($payload);
-
-        return response()->json(compact('data'));
     }
 
     public function forgotPassword(Request $request) : JsonResponse
@@ -158,5 +137,50 @@ class AuthController extends Controller
         return response()->json([
             'message' => __($status)
         ], 400);
+    }
+
+
+    public function resend($payload)
+    {
+        $data = User::where('email', $payload['email'])->first();
+
+        // $data->notify(new \App\Notifications\VerifyOTP());
+        $data->sendEmailVerificationNotification();
+
+        return ['message' => 'Email sent successfully!'];
+    }
+
+    public function verifyOtp($request)
+    {
+
+        $cachedOtp = Cache::get('email_otp_'.$request['email']);
+
+        if (!$cachedOtp) {
+            return response()->json(['message' => 'OTP expired or not found'], 400);
+        }
+
+        if ($cachedOtp != $request['otp']) {
+            return response()->json(['message' => 'Invalid OTP'], 400);
+        }
+
+        // Mark email verified
+        $user = User::where('email', $request['email'])->first();
+        
+        $user->update([
+            'status'      => true,
+            'allow_login' => true
+        ]);
+
+        $user->customerDetail([
+            'user_id' => $user->id
+        ]);
+
+        $user->markEmailAsVerified();
+        $user->assign('customer');
+
+        // Clear OTP
+        Cache::forget('email_otp_'.$request['email']);
+
+        return response()->json(['message' => 'Email verified successfully']);
     }
 }
