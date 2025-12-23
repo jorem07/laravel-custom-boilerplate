@@ -26,8 +26,32 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot(): void
-    {   
-        VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+    {
+        // Relation::morphMap([
+        //     'store_item_menus'      => \App\Models\StoreItemMenu::class,
+        //     'store_item_services'   => \App\Models\StoreItemService::class,
+        //     'custom_package_orders' => \App\Models\CustomPackageOrder::class,
+        //     'package_orders'        => \App\Models\PackageOrder::class,
+        // ]);
+        
+        // VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+        //     $endpoint = explode('api/', $url);
+        //     $new_endpoint = $endpoint[1];
+        //     $new_array = explode('/',$new_endpoint);
+
+        //     $new_url = '/verify/?i='.$new_array[2].'&&t='.$new_array[3];
+
+        //     return (new MailMessage)
+
+        //         ->subject('Verify Email Address')
+
+        //         ->line('Click the button below to verify your email address.')
+
+        //         ->action('Verify Email Address', env('VUE_URL') . $new_url);
+
+        // });
+
+       VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
             $endpoint = explode('api/', $url);
             $new_endpoint = $endpoint[1];
             $new_array = explode('/',$new_endpoint);
@@ -43,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
                 ->action('Verify Email Address', env('VUE_URL') . $new_url);
 
         });
-
+        // revised email verification link
 
         ResetPassword::createUrlUsing(function (User $user, string $token) {
             $security = new SecurityService();

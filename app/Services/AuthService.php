@@ -107,49 +107,81 @@ class AuthService
         $payload['status'] = false;
         $payload['allow_login'] = false;
         
+        $data = User::where('email', $payload['email'])->first();
+        if ($data) {
+            if (is_null($data->email_verified_at)) {
+                
+                $data->sendEmailVerificationNotification();
+                return [
+                    'message' => 'The email already exists. We resent your verification email.',
+                    'status' => 200,
+                    'errors'   => [
+                        'email' => 'Email is already used.',
+                    ],
+                ];
+            }
+
+            return [
+                'message' => 'Email already registered and verified.',
+                'errors'   => [
+                    'email' => 'Email is already used.',
+                ],
+                'status' => 422];
+        }
+
         $data = User::create($payload);
 
-        $data->notify(new \App\Notifications\VerifyOTP());
+        $data->sendEmailVerificationNotification();
 
-        return $data;
+        return ['message' => 'Email sent successfully!', 'status' => 200];
     }
 
+    
     public function resend($payload)
-    {
-        $data = User::where('email', $payload['email'])->first();
+{
+    $user = User::where('email', $payload['email'])->first();
 
-        $data->notify(new \App\Notifications\VerifyOTP());
-
-        return ['message' => 'Email sent successfully!'];
+    if (!$user) {
+        return ['message' => 'User not found'];
     }
+
+    $user->notify(new \App\Notifications\VerifyOTP());
+
+    return ['message' => 'OTP email sent successfully!'];
+}
+
 
     public function verifyOtp($request)
-    {
+{
+    $user = User::where('email', $request['email'])->first();
 
-        $cachedOtp = Cache::get('email_otp_'.$request['user_id']);
-
-        if (!$cachedOtp) {
-            return response()->json(['message' => 'OTP expired or not found'], 400);
-        }
-
-        if ($cachedOtp != $request['otp']) {
-            return response()->json(['message' => 'Invalid OTP'], 400);
-        }
-
-        // Mark email verified
-        $user = User::find($request['user_id']);
-        
-        $user->update([
-            'status' => true,
-            'active' => true
-        ]);
-
-        $user->markEmailAsVerified();
-        $user->assign('customer');
-
-        // Clear OTP
-        Cache::forget('email_otp_'.$request['user_id']);
-
-        return response()->json(['message' => 'Email verified successfully']);
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
     }
+
+    $cachedOtp = Cache::get('email_otp_'.$user->id);
+
+    if (!$cachedOtp) {
+        return response()->json(['message' => 'OTP expired or not found'], 400);
+    }
+
+    if ($cachedOtp != $request['otp']) {
+        return response()->json(['message' => 'Invalid OTP'], 400);
+    }
+
+    // Mark email verified
+    $user->update([
+        'status' => true,
+        'active' => true
+    ]);
+
+    $user->markEmailAsVerified();
+    $user->assign('customer');
+
+    // Clear OTP
+    Cache::forget('email_otp_'.$user->id);
+
+    return response()->json(['message' => 'Email verified successfully']);
+}
+
 }

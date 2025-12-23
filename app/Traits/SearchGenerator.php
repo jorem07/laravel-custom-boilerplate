@@ -18,45 +18,82 @@ trait SearchGenerator
         return $query->when(!empty($filteredSearches), function ($q) use ($filteredSearches) {
             $q->where(function ($sub) use ($filteredSearches) {
                 
-                foreach ($filteredSearches as $search) {
-                    $key = $search['key'] ?? null;
-                    $value = $search['value'] ?? null;
+                $search_value = collect($filteredSearches)
+                            ->filter(fn ($q) => isset($q['key'], $q['value']))
+                            ->groupBy('key')
+                            ->map(fn ($items) => $items->pluck('value')->values()->toArray())
+                            ->toArray();
 
-                    $between = $search['between'] ?? null;
-                    
-                    $between = collect($between)->map(function($q){
-                        return $q;
-                    })
-                    ->filter()
-                    ->values()
-                    ->toArray();
+                $search_between = collect($filteredSearches)
+                            ->filter(fn ($q) => isset($q['key'], $q['between']))
+                            ->groupBy('key')
+                            ->map(fn ($items) => $items->pluck('between')->values()->toArray())
+                            ->toArray();
 
-                    if (isset($between) && count($between) === 2) {
-                        $sub->whereBetween($key, $between);
-                        continue;
-                    }
-                    // dd($filteredSearches);
-                    if (!$key || $value === '' || $value === null) continue;           
-                    
-                    if (Str::contains($key, '.')) {
-                        
-                        [$relation, $column] = explode('.', $key, 2);
+                if(isset($search_value)){
+                    foreach($search_value as $key=>$value)
+                    {
+                        if(Str::contains($key, '.'))
+                        {
+                            [$relation, $column] = explode('.', $key, 2);
+                            
+                            $sub->orWhereHas($relation, function ($sub) use ($column, $value) {
+                                $sub->whereIn($column, $value);
+                            });
 
-                        $sub->orWhereHas($relation, function ($rel) use ($column, $value) {
-                            if ($column === 'id' || ctype_digit((string) $value) || is_bool($value)) {
-                                $rel->where($column, $value);
-                            }else{
-                                $rel->where($column, 'ILIKE', "%{$value}%");
-                            }
-                        });
-                    } else {
-                        if ($key === 'id' || ctype_digit((string) $value) || is_bool($value)) {
-                            $sub->where($key, $value);
-                        } else {
-                            $sub->where($key, 'ILIKE', "%{$value}%");
+                        }else{
+                            $sub->whereIn($key, $value);
                         }
                     }
                 }
+
+                if(isset($search_between)){
+                    foreach($search_between as $key=>$value)
+                    {
+                        $sub->whereBetween($key, $value);
+                    }
+                }
+                
+                // foreach ($filteredSearches as $search) {
+                //     $key = $search['key'] ?? null;
+                //     $value = $search['value'] ?? null;
+
+                //     $between = $search['between'] ?? null;
+                    
+                //     $between = collect($between)->map(function($q){
+                //         return $q;
+                //     })
+                //     ->filter()
+                //     ->values()
+                //     ->toArray();
+
+                //     // dd($filteredSearches);
+                //     if (!$key || $value === '' || $value === null) continue;  
+                    
+                //     if (isset($between) && count($between) === 2) {
+                //         $sub->whereBetween($key, $between);
+                //         continue;
+                //     }
+                    
+                //     if (Str::contains($key, '.')) {
+                        
+                //         [$relation, $column] = explode('.', $key, 2);
+
+                //         $sub->orWhereHas($relation, function ($rel) use ($column, $value) {
+                //             if ($column === 'id' || ctype_digit((string) $value) || is_bool($value)) {
+                //                 $rel->where($column, $value);
+                //             }else{
+                //                 $rel->where($column, 'ILIKE', "%{$value}%");
+                //             }
+                //         });
+                //     } else {
+                //         if ($key === 'id' || ctype_digit((string) $value) || is_bool($value)) {
+                //             $sub->where($key, $value);
+                //         } else {
+                //             $sub->where($key, 'ILIKE', "%{$value}%");
+                //         }
+                //     }
+                // }
             });
         });
     }
