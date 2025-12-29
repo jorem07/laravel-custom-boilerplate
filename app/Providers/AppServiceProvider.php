@@ -27,15 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Relation::morphMap([
-        //     'store_item_menus'      => \App\Models\StoreItemMenu::class,
-        //     'store_item_services'   => \App\Models\StoreItemService::class,
-        //     'custom_package_orders' => \App\Models\CustomPackageOrder::class,
-        //     'package_orders'        => \App\Models\PackageOrder::class,
-        // ]);
+
         
         // VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
-        //     $endpoint = explode('api/', $url);
+        //     $endpoint = explode('api-kuchef/', $url);
         //     $new_endpoint = $endpoint[1];
         //     $new_array = explode('/',$new_endpoint);
 
@@ -51,28 +46,32 @@ class AppServiceProvider extends ServiceProvider
 
         // });
 
-       VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+        // revised email verification link
+        VerifyEmail::toMailUsing(function ($notifiable, $url) {
             $endpoint = explode('api/', $url);
             $new_endpoint = $endpoint[1];
-            $new_array = explode('/',$new_endpoint);
+            $new_array = explode('/', $new_endpoint);
 
-            $new_url = '/verify/?i='.$new_array[2].'&&t='.$new_array[3];
+            $new_url = '/verify/?i=' . $new_array[2] . '&&t=' . $new_array[3];
 
             return (new MailMessage)
-
-                ->subject('Verify Email Address')
-
-                ->line('Click the button below to verify your email address.')
-
-                ->action('Verify Email Address', env('VUE_URL') . $new_url);
-
+                ->subject('Verify Your Email')
+                ->view('auth.verify', ['url' => env('VUE_URL') . $new_url,
+                ]);
         });
-        // revised email verification link
 
-        ResetPassword::createUrlUsing(function (User $user, string $token) {
-            $security = new SecurityService();
-            $hash = $security->encrypt($user->email);
-            return env('VUE_URL')."/forgot-password/reset?t=$token&&k=$hash";
+        // revised email verification link
+        ResetPassword::toMailUsing(function ($notifiable, $token) {
+            
+            $security = new \App\Services\SecurityService();
+            $hash = $security->encrypt($notifiable->email);
+            $url = env('VUE_URL') . "/forgot-password/reset?t=$token&&k=$hash";
+
+            return (new MailMessage)
+                ->subject('Reset Your Password')
+                ->view('auth.reset', [
+                    'url'  => $url,
+                ]);
         });
     }
 }
