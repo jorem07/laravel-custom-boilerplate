@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\TestingEvent;
 use App\Http\Controllers\AuthController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -74,3 +75,17 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     $request->fulfill();
     return response()->json(['message' => 'Email verified successfully.']);
 })->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
+
+Route::get('/test', function (Request $request) {
+    $payload = [
+        'message' => $request->input('message', 'Manual test broadcast'),
+        'body' => $request->input('body'),
+    ];
+
+    event(new TestingEvent($payload));
+
+    return response()->json([
+        'status' => 'Event sent',
+        ...$payload,
+    ]);
+});

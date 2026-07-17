@@ -10,8 +10,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
-        apiPrefix: 'api',
+        apiPrefix: 'api-queuing',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -20,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'log.route' => \App\Http\Middleware\LogRoute::class,
         ]);
 
-        $middleware->group('api-kuchef', [
+        $middleware->group('api-queuing', [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,

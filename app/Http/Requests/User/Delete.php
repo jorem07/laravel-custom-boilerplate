@@ -42,7 +42,7 @@ class Delete extends FormRequest
 
         $class = class_basename($this);
         if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:users,id'];
+            $validate['id'] = ['required', 'exists:users,id,deleted_at,NULL'];
         }
         
         return array_merge($this->payloadTaits(), $validate);

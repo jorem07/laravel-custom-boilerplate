@@ -38,7 +38,16 @@ class Store extends FormRequest
     public function rules(): array
     {
         // Add your validation rules here
-        $validate = [];
+        $validate = [
+            'first_name'    => 'required|string',
+            'middle_name'   => 'required|string',
+            'last_name'     => 'required|string',
+            'allow_login'   => 'required|boolean',
+            'status'        => 'required|boolean',
+            'password'      => 'required|string|confirmed',
+            'email'         => 'required|unique:users,email,NULL,NULL,deleted_at,NULL',
+            'role_id'       => 'required|array|exists:roles,id,deleted_at,NULL'
+        ];
 
         $class = class_basename($this);
         if ($class !== 'Store'  && $class !== 'Index') {

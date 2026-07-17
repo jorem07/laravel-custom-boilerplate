@@ -38,11 +38,23 @@ class Update extends FormRequest
     public function rules(): array
     {
         // Add your validation rules here
-        $validate = [];
+        $validate = [
+            'first_name'      => 'required|string',
+            'middle_name'     => 'required|string',
+            'last_name'       => 'required|string',
+            'allow_login'     => 'required|boolean',
+            'status'          => 'required|boolean',
+            'current_password'=> $this->is_admin ? 'nullable' : 'required|current_password',
+            'new_password'    => 'nullable|string',
+            'password'        => 'nullable|string|confirmed',
+            'email'           => 'required|unique:users,email,' . $this->id . ',id,deleted_at,NULL',
+            'role_id'           => 'required|array|exists:roles,id',
+            'is_admin'        => 'required|boolean'
+        ];
 
         $class = class_basename($this);
         if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:users,id'];
+            $validate['id'] = ['required', 'exists:users,id,deleted_at,NULL'];
         }
         
         return array_merge($this->payloadTaits(), $validate);
@@ -52,8 +64,14 @@ class Update extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
+        $user = $this->user()->load(['roles']);
+
+        $roles = $user->roles->pluck('name')->toArray();
+
         $this->merge([
-            'id'    => $this->route('users')
+            'id'        => $this->route('users'),
+            'passowod'  => $this->new_password,
+            'is_admin'  => (bool) array_intersect(['admin', 'super-admin'], $roles)
         ]);
     }
 }

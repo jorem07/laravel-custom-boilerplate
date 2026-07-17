@@ -18,7 +18,7 @@ use App\Traits\RelationTrait;
 class {{ class }} extends Model
 {
     // Use Laravel traits for factory, soft deletes, and custom search functionality
-    use HasFactory, SoftDeletes, SearchGenerator, RelationTrait;
+    use HasFactory, SoftDeletes, SearchGenerator;
 
     /**
      * The attributes that are mass assignable.

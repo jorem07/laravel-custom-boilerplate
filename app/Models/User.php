@@ -14,7 +14,7 @@ use Silber\Bouncer\Database\HasRolesAndAbilities;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRolesAndAbilities, SoftDeletes, SearchGenerator;
+    use HasFactory, Notifiable, HasApiTokens, HasRolesAndAbilities, SearchGenerator, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -43,6 +43,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
+    protected $excludedColumn = [
+        'password',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'remember_token',
+        'email_verified_at',
+        'allow_login',
+        'email',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -54,6 +65,11 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getExcludedColumn(): array
+    {
+        return $this->excludedColumn;
     }
 
 }

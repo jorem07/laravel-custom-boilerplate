@@ -3,13 +3,14 @@
 namespace App\Traits;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 trait SearchGenerator
 {
     public function scopeSearchColumns($query, array $searches)
     {
-        $excluded = ['email','password'];
+        $excluded = ['email', 'password'];
 
         $filteredSearches = array_filter($searches, function ($search) use ($excluded) {
             return !in_array($search['key'] ?? '', $excluded, true);
@@ -17,94 +18,82 @@ trait SearchGenerator
 
         return $query->when(!empty($filteredSearches), function ($q) use ($filteredSearches) {
             $q->where(function ($sub) use ($filteredSearches) {
-                
-                foreach ($filteredSearches as $search) {
-                    $key = $search['key'] ?? null;
-                    $value = $search['value'] ?? null;
 
-                    $between = $search['between'] ?? null;
-                    
-                    $between = collect($between)->map(function($q){
-                        return $q;
-                    })
-                    ->filter()
-                    ->values()
+                $search_value = collect($filteredSearches)
+                    ->filter(fn($q) => isset($q['key'], $q['value']))
+                    ->groupBy('key')
+                    ->map(fn($items) => $items->pluck('value')->values()->toArray())
                     ->toArray();
 
-                    if (isset($between) && count($between) === 2) {
-                        $sub->whereBetween($key, $between);
-                        continue;
-                    }
-                    // dd($filteredSearches);
-                    if (!$key || $value === '' || $value === null) continue;           
-                    
-                    if (Str::contains($key, '.')) {
-                        
-                        [$relation, $column] = explode('.', $key, 2);
+                $search_between = collect($filteredSearches)
+                    ->filter(fn($q) => isset($q['key'], $q['between']))
+                    ->groupBy('key')
+                    ->map(fn($items) => $items->pluck('between')->values()->toArray())
+                    ->toArray();
 
-                        $sub->orWhereHas($relation, function ($rel) use ($column, $value) {
-                            if ($column === 'id' || ctype_digit((string) $value) || is_bool($value)) {
-                                $rel->where($column, $value);
-                            }else{
-                                $rel->where($column, 'ILIKE', "%{$value}%");
-                            }
-                        });
-                    } else {
-                        if ($key === 'id' || ctype_digit((string) $value) || is_bool($value)) {
-                            $sub->where($key, $value);
+                if (!empty($search_value)) {
+                    foreach ($search_value as $key => $values) {
+                        if (Str::contains($key, '.')) {
+                            $this->applyNestedRelationWhereIn($sub, $key, $values);
                         } else {
-                            $sub->where($key, 'ILIKE', "%{$value}%");
+                            $this->applyWhereIn($sub, $key, $values);
                         }
+                    }
+                }
+
+                if (!empty($search_between)) {
+                    foreach ($search_between as $key => $value) {
+                        $sub->whereBetween($key, $value);
                     }
                 }
             });
         });
     }
 
+    private function applyWhereIn($query, $column, $value)
+    {
+        $table = $query->getModel()->getTable();
+        $type  = Schema::getColumnType($table, $column);
 
-    // public function scopeFullSearch($query, ?string $term, array $searchables = [])
-    // {
-    //     if (empty($term) || empty($searchables)) {
-    //         return $query;
-    //     }
+        if (in_array($type, ['int4', 'int8', 'bool', 'date', 'timestamp'])) {
+            $query->orWhereIn($column, $value);
+        } elseif ($type === 'json') {
+            if (is_string($value)) {
+                // split by comma or space (one or more spaces)
+                $value = preg_split('/[\s,]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+            }
 
-    //     $excluded = ['email', 'password'];
-    //     $allowedSearchables = array_values(array_diff($searchables, $excluded));
+            foreach ($value as $v) {
+                $query->orWhereJsonContains($column, $v);
+            }
+        } else {
+            // $query->whereIn(
+            //     DB::raw('LOWER("' . $column . '")'),
+            //     array_map('strtolower', $value)
+            // );
+            foreach ($value as $item) {
+                $query->where(
+                    DB::raw('LOWER("' . $column . '")'),
+                    'like',
+                    '%' . strtolower($item) . '%'
+                );
+            }
+        }
+    }
 
-    //     if (empty($allowedSearchables)) {
-    //         return $query;
-    //     }
+    /**
+     * Apply whereIn on nested relations like store.region.name
+     */
+    protected function applyNestedRelationWhereIn($query, string $key, array $values)
+    {
+        $parts = explode('.', $key);
+        $column = array_pop($parts); // final column
+        $relationPath = $parts;
 
-    //     $tokens = explode(' ', $term);
-
-    //     $query->where(function ($q) use ($tokens, $allowedSearchables) {
-    //         foreach ($tokens as $token) {
-    //             $token = strtoupper($token);
-
-    //             $conditions = [];
-
-    //             foreach ($allowedSearchables as $col) {
-    //                 // Handle relation dot notation: e.g. packages.name
-    //                 if (str_contains($col, '.')) {
-    //                     [$relation, $relationColumn] = explode('.', $col, 2);
-
-    //                     $q->orWhereHas($relation, function ($sub) use ($relationColumn, $token) {
-    //                         $sub->whereRaw("UPPER($relationColumn) LIKE ?", ["%{$token}%"]);
-    //                     });
-    //                 } else {
-    //                     // Main table column
-    //                     $conditions[] = "UPPER($col) LIKE ?";
-    //                 }
-    //             }
-
-    //             if (!empty($conditions)) {
-    //                 $q->orWhereRaw('(' . implode(' OR ', $conditions) . ')', array_fill(0, count($conditions), "%{$token}%"));
-    //             }
-    //         }
-    //     });
-
-    //     return $query;
-    // }
+        $query->whereHas(implode('.', $relationPath), function ($q) use ($column, $values) {
+            $this->applyWhereIn($q, $column, $values);
+        });
+    }
 
     public function scopeFullSearch($query, ?string $term, array $searchables = [])
     {
@@ -120,70 +109,158 @@ trait SearchGenerator
         }
 
         $joins = [];
+        $model = $query->getModel();
+        $baseTable = $model->getTable();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dynamic Joins (Supports Nested Relations)
+        |--------------------------------------------------------------------------
+        */
 
         foreach ($allowedSearchables as $col) {
-            if (str_contains($col, '.')) {
-                [$relation, $relationColumn] = explode('.', $col, 2);
-                $relationObj = $query->getModel()->$relation();
 
-                if (method_exists($relationObj, 'getRelated')) {
-                    $related = $relationObj->getRelated();
-                    $relatedTable = $related->getTable();
+            if (!str_contains($col, '.')) {
+                continue;
+            }
+
+            $relations = explode('.', $col);
+            $relationColumn = array_pop($relations);
+
+            $currentModel = $model;
+
+            foreach ($relations as $relation) {
+
+                $relationObj = $currentModel->$relation();
+                $related = $relationObj->getRelated();
+                $relatedTable = $related->getTable();
+
+                if (!in_array($relatedTable, $joins)) {
 
                     if ($relationObj instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo) {
+
                         $foreignKey = $relationObj->getQualifiedForeignKeyName();
-                        $ownerKey = $relationObj->getQualifiedOwnerKeyName();
-                        if (!in_array($relatedTable, $joins)) {
-                            $query->leftJoin($relatedTable, $ownerKey, '=', $foreignKey);
-                            $joins[] = $relatedTable;
-                        }
-                    } else {
+                        $ownerKey   = $relationObj->getQualifiedOwnerKeyName();
+
+                        $query->leftJoin($relatedTable, $ownerKey, '=', $foreignKey);
+                    } elseif (
+                        $relationObj instanceof \Illuminate\Database\Eloquent\Relations\HasOne
+                        || $relationObj instanceof \Illuminate\Database\Eloquent\Relations\HasMany
+                    ) {
+
                         $foreignKey = $relationObj->getQualifiedForeignKeyName();
-                        $localKey = $relationObj->getQualifiedParentKeyName();
-                        if (!in_array($relatedTable, $joins)) {
-                            $query->leftJoin($relatedTable, $foreignKey, '=', $localKey);
-                            $joins[] = $relatedTable;
-                        }
+                        $localKey   = $relationObj->getQualifiedParentKeyName();
+
+                        $query->leftJoin($relatedTable, $foreignKey, '=', $localKey);
+                    } elseif ($relationObj instanceof \Illuminate\Database\Eloquent\Relations\MorphToMany) {
+
+                        $pivotTable = $relationObj->getTable();
+                        $relatedTable = $relationObj->getRelated()->getTable();
+
+                        // Join pivot table to base table
+                        $query->leftJoin(
+                            $pivotTable,
+                            $pivotTable . '.' . $relationObj->getForeignPivotKeyName(),
+                            '=', // e.g., assigned_roles.entity_id
+                            $currentModel->getTable() . '.' . $currentModel->getKeyName()    // e.g., users.id
+                        )->where($pivotTable . '.' . $relationObj->getMorphType(), get_class($currentModel)); // entity_type = User
+
+                        // Join related table to pivot
+                        $query->leftJoin(
+                            $relatedTable,
+                            $relatedTable . '.id',
+                            '=', // roles.id
+                            $pivotTable . '.' . $relationObj->getRelatedPivotKeyName() // assigned_roles.role_id
+                        );
                     }
+
+                    $joins[] = $relatedTable;
                 }
+
+                $currentModel = $related;
             }
         }
 
+        $query->select($baseTable . '.*');
 
-        $query->select($query->getModel()->getTable() . '.*');
+        /*
+        |--------------------------------------------------------------------------
+        | Similarity Search
+        |--------------------------------------------------------------------------
+        */
 
-        $query->where(function ($q) use ($term, $allowedSearchables) {
+        $query->where(function ($q) use ($term, $allowedSearchables, $model) {
 
             $threshold = (count(explode(' ', $term)) / 100) * 10;
 
-            if($threshold > 0.9){
+            if ($threshold > 0.9) {
                 $threshold = 0.9;
             }
 
             foreach ($allowedSearchables as $col) {
-                if (str_contains($col, '.')) {
-                    [$relation, $relationColumn] = explode('.', $col, 2);
 
-                    $relatedTable = $q->getModel()->$relation()->getRelated()->getTable();
-                    $q->orWhereRaw("similarity({$relatedTable}.{$relationColumn}, ?) > $threshold", [$term]);
+                if (str_contains($col, '.')) {
+
+                    $relations = explode('.', $col);
+                    $relationColumn = array_pop($relations);
+
+                    $currentModel = $model;
+
+                    foreach ($relations as $relation) {
+                        $currentModel = $currentModel->$relation()->getRelated();
+                    }
+
+                    $relatedTable = $currentModel->getTable();
+
+                    $q->orWhereRaw(
+                        "similarity(CAST({$relatedTable}.{$relationColumn} AS TEXT), ?) > {$threshold}",
+                        [$term]
+                    );
+
+                    // $relatedTable}.{$relationColumn}
+                    // CAST({$table}.{$col} AS TEXT)
+
                 } else {
 
-                    $table = $q->getModel()->getTable();
-                    $q->orWhereRaw("similarity({$table}.{$col}, ?) > $threshold", [$term]);
+                    $table = $model->getTable();
+
+                    $q->orWhereRaw(
+                        "similarity(CAST({$table}.{$col} AS TEXT), ?) > {$threshold}",
+                        [$term]
+                    );
                 }
             }
         });
 
-        $similarityColumns = array_map(function ($col) use ($query) {
+        /*
+        |--------------------------------------------------------------------------
+        | Similarity Ranking
+        |--------------------------------------------------------------------------
+        */
+
+        $similarityColumns = array_map(function ($col) use ($term, $model) {
+
             if (str_contains($col, '.')) {
-                [$relation, $relationColumn] = explode('.', $col, 2);
-                $relatedTable = $query->getModel()->$relation()->getRelated()->getTable();
-                return "similarity({$relatedTable}.{$relationColumn}, ?)";
+
+                $relations = explode('.', $col);
+                $relationColumn = array_pop($relations);
+
+                $currentModel = $model;
+
+                foreach ($relations as $relation) {
+                    $currentModel = $currentModel->$relation()->getRelated();
+                }
+
+                $relatedTable = $currentModel->getTable();
+
+                return "similarity(CAST({$relatedTable}.{$relationColumn} AS TEXT), ?)";
             } else {
-                $table = $query->getModel()->getTable();
-                return "similarity({$table}.{$col}, ?)";
+
+                $table = $model->getTable();
+                return "similarity(CAST({$table}.{$col} AS TEXT), ?)";
             }
         }, $allowedSearchables);
+
 
         $query->orderByRaw(
             'GREATEST(' . implode(', ', $similarityColumns) . ') DESC',
@@ -207,5 +284,4 @@ trait SearchGenerator
 
         return '(' . implode(' || ', $exprParts) . ')';
     }
-
 }

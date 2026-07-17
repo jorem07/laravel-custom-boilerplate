@@ -38,7 +38,9 @@ class Store extends FormRequest
     public function rules(): array
     {
         // Add your validation rules here
-        $validate = [];
+        $validate = [
+            'name'          => 'required|string'
+        ];
 
         $class = class_basename($this);
         if ($class !== 'Store'  && $class !== 'Index') {

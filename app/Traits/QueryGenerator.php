@@ -28,8 +28,8 @@ trait QueryGenerator
         })->values()->toArray();
 
         $data = $this->model->with($selected_relation)->newQuery();
-        $data->searchColumns($search);
-        $data->fullSearch($full_search, $searchable);
+        // $data->searchColumns($search);
+        // $data->fullSearch($full_search, $searchable);
 
         $total = $data->count();
         $list = $data->skip($skip)

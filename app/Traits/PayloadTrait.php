@@ -35,6 +35,7 @@ trait PayloadTrait
 
         throw new HttpResponseException(
             response()->json([
+                'message'=> $validator->errors()->first(),
                 'errors' => $nested
             ], 422)
         );

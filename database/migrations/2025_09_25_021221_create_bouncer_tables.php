@@ -37,6 +37,8 @@ return new class extends Migration
                 ['name', 'scope'],
                 'roles_name_unique'
             );
+
+            $table->softDeletes();
         });
 
         Schema::create(Models::table('assigned_roles'), function (Blueprint $table) {

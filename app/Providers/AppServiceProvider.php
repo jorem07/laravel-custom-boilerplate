@@ -11,6 +11,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,7 +21,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $interfacePath = app_path('Repositories/Contracts');
+
+        if (!File::exists($interfacePath)) {
+            return;
+        }
+
+        foreach (File::files($interfacePath) as $file) {
+            
+            $interfaceName = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+            
+            if (!Str::endsWith($interfaceName, 'RepositoryInterface')) {
+                continue;
+            }
+            
+            $baseName = Str::replaceLast('RepositoryInterface', '', $interfaceName);
+
+            $interface = "App\\Repositories\\Contracts\\{$interfaceName}";
+            $repository = "App\\Repositories\\{$baseName}Repository";
+            
+            if (class_exists($repository)) {
+                $this->app->bind($interface, $repository);
+            }
+        }
     }
 
     /**
