@@ -8,6 +8,8 @@ use App\Http\Requests\Queue\Show;
 use App\Http\Requests\Queue\Store;
 use App\Http\Requests\Queue\Update;
 use App\Http\Requests\Queue\Delete;
+use App\Http\Requests\Queue\Next;
+use App\Http\Requests\Queue\Current;
 use App\Services\QueueService;
 
 class QueueController extends Controller
@@ -17,7 +19,9 @@ class QueueController extends Controller
     protected array $searchable = [];
 
     protected array $relation = [
-        'queue_status' => ['id', 'name']
+        'queue_status' => ['id', 'name'],
+        'counter' => ['id', 'name'],
+        'user' => ['id', 'first_name', 'last_name'],
     ];
 
     public function __construct(QueueService $queueService)
@@ -61,6 +65,21 @@ class QueueController extends Controller
     {
         $payload = $request->validated();
         $data = $this->queueService->delete($id, $payload);
+
+        return $this->getJsonResponse($data);
+    }
+
+    public function current(Current $request): JsonResponse
+    {
+        $data = $this->queueService->current($this->relation);
+
+        return $this->getJsonResponse($data);
+    }
+
+    public function next(Next $request): JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->queueService->next($payload, $this->relation);
 
         return $this->getJsonResponse($data);
     }
