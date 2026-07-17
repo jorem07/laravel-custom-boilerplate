@@ -6,6 +6,8 @@ use App\Traits\RelationTrait;
 use App\Traits\SearchGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -25,7 +27,11 @@ class Counter extends Model
      *
      * @var array
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'name',
+        'user_id',
+        'office_service_id',
+    ];
 
     /**
      * The relationships that should always be loaded.
@@ -42,7 +48,28 @@ class Counter extends Model
      * @var array
      */
     protected $hidden = [];
+    
+    protected $excludedColumn = [];
 
     // You can override or add methods here to customize model
+    public function getExcludedColumn(): array
+    {
+        return $this->excludedColumn;
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function office_service(): BelongsTo
+    {
+        return $this->belongsTo(OfficeService::class, 'office_service_id', 'id');
+    }
+
+    public function counter_user_logs(): HasMany
+    {
+        return $this->hasMany(CounterUserLog::class, 'counter_id', 'id');
+    }
 }
 

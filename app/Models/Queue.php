@@ -70,5 +70,15 @@ class Queue extends Model
     {
         return $this->belongsTo(QueueStatus::class, 'queue_status_id', 'id');
     }
+
+    public function counter(): BelongsTo
+    {
+        return $this->belongsTo(Counter::class, 'counter_id', 'id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
 }
 

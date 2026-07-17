@@ -89,3 +89,11 @@ Route::get('/test', function (Request $request) {
         ...$payload,
     ]);
 });
+
+Route::get('/queues/current', [\App\Http\Controllers\QueueController::class, 'current']);
+Route::post('/queues/next', [\App\Http\Controllers\QueueController::class, 'next']);
+
+Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 'active']);
+Route::get('/counter-user-logs', [\App\Http\Controllers\CounterController::class, 'logs']);
+Route::post('/counters/login', [\App\Http\Controllers\CounterController::class, 'login']);
+Route::post('/counters/logout', [\App\Http\Controllers\CounterController::class, 'logout']);

@@ -17,7 +17,9 @@ class QueueDTO
         public ?string $time_start,
         public ?string $time_end,
         public int $queue_status_id,
-        public string $queue_statuses_name
+        public string $queue_statuses_name,
+        public ?string $counter_name = null,
+        public ?string $user_name = null,
     ) {}
 
     public function toArray(): array
@@ -32,12 +34,19 @@ class QueueDTO
             'time_start'         => $this->time_start,
             'time_end'           => $this->time_end,
             'queue_status_id'    => $this->queue_status_id,
-            'queue_statuses_name'=> $this->queue_statuses_name
+            'queue_statuses_name'=> $this->queue_statuses_name,
+            'counter_name'       => $this->counter_name,
+            'user_name'          => $this->user_name,
         ];
     }
 
     public static function fromModel(Queue $queue): self
     {
+        $userName = null;
+        if ($queue->relationLoaded('user') && $queue->user) {
+            $userName = trim("{$queue->user->first_name} {$queue->user->last_name}");
+        }
+
         return new self(
             id: $queue->id,
             queue_no: $queue->queue_no,
@@ -48,7 +57,9 @@ class QueueDTO
             time_start: $queue->time_start,
             time_end: $queue->time_end,
             queue_status_id: $queue->queue_status_id,
-            queue_statuses_name: $queue->queue_status->name
+            queue_statuses_name: $queue->queue_status->name,
+            counter_name: $queue->relationLoaded('counter') ? $queue->counter?->name : null,
+            user_name: $userName ?: null,
         );
     }
 

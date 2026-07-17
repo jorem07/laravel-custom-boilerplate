@@ -9,3 +9,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('test-channel', function ($user, $id) {
     return true;
 });
+
+Broadcast::channel('queue-channel', function () {
+    return true;
+});
