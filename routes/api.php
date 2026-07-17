@@ -23,7 +23,7 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
 # DYNAMIC ROUTING PER CONTROLLER #######################################################################################
     $controller_directory = app_path('Http/Controllers');
     $controller_files = scandir($controller_directory);
-    $excluded_controllers = ['Auth','Mail', 'Dashboard']; // remove post name 'Controller in adding excluded controllers
+    $excluded_controllers = ['Auth','Mail', 'Dashboard', 'PDF']; // remove post name 'Controller in adding excluded controllers
 
     foreach ($controller_files as $controller_file) {
         if (is_file($controller_directory . '/' . $controller_file)) {
@@ -97,3 +97,5 @@ Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 
 Route::get('/counter-user-logs', [\App\Http\Controllers\CounterController::class, 'logs']);
 Route::post('/counters/login', [\App\Http\Controllers\CounterController::class, 'login']);
 Route::post('/counters/logout', [\App\Http\Controllers\CounterController::class, 'logout']);
+
+Route::match(['GET', 'POST'], '/pdf/queue', [\App\Http\Controllers\PDFController::class, 'queue']);
