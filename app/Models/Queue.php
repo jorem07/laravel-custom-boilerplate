@@ -34,7 +34,15 @@ class Queue extends Model
         'user_id',
         'queue_status_id',
         'time_start',
-        'time_end'
+        'time_end',
+        'estimated_wait_minutes',
+        'estimated_time_return',
+    ];
+
+    protected $casts = [
+        'time_start' => 'datetime',
+        'time_end' => 'datetime',
+        'estimated_time_return' => 'datetime',
     ];
 
     /**

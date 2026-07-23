@@ -215,12 +215,6 @@ class CounterService extends BaseService
         try {
             $counter = Counter::query()->lockForUpdate()->findOrFail($payload['counter_id']);
 
-            if (!$counter->user_id) {
-                throw ValidationException::withMessages([
-                    'counter_id' => ['No user is currently logged in to this counter.'],
-                ]);
-            }
-
             $closedLog = $this->closeActiveLogForCounter($counter->id);
             $counter->update(['user_id' => null]);
             $counter = $counter->fresh(array_keys($relation));

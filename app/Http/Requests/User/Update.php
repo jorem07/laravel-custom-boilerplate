@@ -5,6 +5,7 @@ namespace App\Http\Requests\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -47,15 +48,10 @@ class Update extends FormRequest
             'current_password'=> $this->is_admin ? 'nullable' : 'required|current_password',
             'new_password'    => 'nullable|string',
             'password'        => 'nullable|string|confirmed',
-            'email'           => 'required|unique:users,email,' . $this->id . ',id,deleted_at,NULL',
-            'role_id'           => 'required|array|exists:roles,id',
+            'email'           => ['required', Rule::unique('users')->ignore($this->id)->whereNull('deleted_at')],
+            'role_id'         => 'required|array|exists:roles,id,deleted_at,NULL',
             'is_admin'        => 'required|boolean'
         ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:users,id,deleted_at,NULL'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
     }
@@ -69,8 +65,7 @@ class Update extends FormRequest
         $roles = $user->roles->pluck('name')->toArray();
 
         $this->merge([
-            'id'        => $this->route('users'),
-            'passowod'  => $this->new_password,
+            'password'  => $this->new_password,
             'is_admin'  => (bool) array_intersect(['admin', 'super-admin'], $roles)
         ]);
     }

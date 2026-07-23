@@ -19,7 +19,7 @@ class Queue extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => 'required_without:uuid|integer|exists:queues,id,deleted_at,NULL',
+            // 'id' => 'required_without:uuid|integer|exists:queues,id,deleted_at,NULL',
             'uuid' => 'required_without:id|uuid|exists:queues,uuid',
             'disposition' => 'nullable|in:inline,download',
         ];

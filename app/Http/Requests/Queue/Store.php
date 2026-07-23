@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Queue;
 
+use App\Models\OfficeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
@@ -46,11 +47,6 @@ class Store extends FormRequest
             'uuid'              => 'required|uuid|unique:queues,uuid',
             'time_start'        => 'required'
         ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:queues,id'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
     }
@@ -61,7 +57,6 @@ class Store extends FormRequest
         $uuid = Str::uuid7();
 
         $this->merge([
-            'id'            => $this->route('queues'),
             'uuid'          => (string) $uuid,
             'time_start'    => Carbon::now()
         ]);

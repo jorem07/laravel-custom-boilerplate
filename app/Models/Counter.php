@@ -71,5 +71,10 @@ class Counter extends Model
     {
         return $this->hasMany(CounterUserLog::class, 'counter_id', 'id');
     }
+
+    public function performances(): HasMany
+    {
+        return $this->hasMany(CounterPerformance::class, 'counter_id', 'id');
+    }
 }
 

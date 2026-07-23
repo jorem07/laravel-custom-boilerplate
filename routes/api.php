@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 // Route::middleware('log.route')->post('/auth/login', [AuthController::class, 'login'])->name('api.login');
-Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthController::class, 'register'])->name('api.register');
+Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthController::class, 'logout'])->name('api.logout');
 
 Route::prefix('auth')->middleware(['log.route'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -62,6 +62,15 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
         }
     }
 
+    Route::get('/queues/current', [\App\Http\Controllers\QueueController::class, 'current']);
+    Route::post('/queues/next', [\App\Http\Controllers\QueueController::class, 'next']);
+
+    Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 'active']);
+    Route::get('/counter-user-logs', [\App\Http\Controllers\CounterController::class, 'logs']);
+    Route::post('/counters/login', [\App\Http\Controllers\CounterController::class, 'login']);
+    Route::post('/counters/logout', [\App\Http\Controllers\CounterController::class, 'logout']);
+    Route::get('/counters/performance', [\App\Http\Controllers\CounterController::class, 'performance']);
+
 });
 
 Route::middleware(['guest'])->post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
@@ -90,12 +99,6 @@ Route::get('/test', function (Request $request) {
     ]);
 });
 
-Route::get('/queues/current', [\App\Http\Controllers\QueueController::class, 'current']);
-Route::post('/queues/next', [\App\Http\Controllers\QueueController::class, 'next']);
-
-Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 'active']);
-Route::get('/counter-user-logs', [\App\Http\Controllers\CounterController::class, 'logs']);
-Route::post('/counters/login', [\App\Http\Controllers\CounterController::class, 'login']);
-Route::post('/counters/logout', [\App\Http\Controllers\CounterController::class, 'logout']);
-
 Route::match(['GET', 'POST'], '/pdf/queue', [\App\Http\Controllers\PDFController::class, 'queue']);
+Route::post('/queues/store', [\App\Http\Controllers\QueueController::class, 'store']);
+Route::get('/queues/show/{queues}', [\App\Http\Controllers\QueueController::class, 'show']);
