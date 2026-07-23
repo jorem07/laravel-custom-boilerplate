@@ -7,6 +7,7 @@ use App\Traits\SearchGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -61,6 +62,16 @@ class OfficeService extends Model
     public function office() : BelongsTo
     {
         return $this->belongsTo(Office::class, 'office_id', 'id');
+    }
+
+    public function office_service_category() : BelongsTo
+    {
+        return $this->belongsTo(OfficeServiceCategory::class, 'office_service_category_id', 'id');
+    }
+
+    public function counters() : HasMany
+    {
+        return $this->hasMany(Counter::class, 'office_service_id', 'id');
     }
 }
 

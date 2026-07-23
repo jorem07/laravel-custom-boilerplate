@@ -32,4 +32,8 @@ class QueueRepository implements QueueRepositoryInterface
     }
 
     // You can override or add methods here to customize repository
+    public function find($id): Queue
+    {
+        return $this->model->where('uuid', $id)->first();
+    }
 }

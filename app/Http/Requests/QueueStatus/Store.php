@@ -41,21 +41,7 @@ class Store extends FormRequest
         $validate = [
             'name'      => 'required|unique:queue_statuses,name,NULL,NULL,deleted_at,NULL',
         ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:queue_statuses,id'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('queue_statuses')
-        ]);
     }
 }

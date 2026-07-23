@@ -5,6 +5,7 @@ namespace App\Http\Requests\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Store
@@ -45,24 +46,10 @@ class Store extends FormRequest
             'allow_login'   => 'required|boolean',
             'status'        => 'required|boolean',
             'password'      => 'required|string|confirmed',
-            'email'         => 'required|unique:users,email,NULL,NULL,deleted_at,NULL',
+            'email'         => ['required', Rule::unique('users')->whereNull('deleted_at')],
             'role_id'       => 'required|array|exists:roles,id,deleted_at,NULL'
         ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:users,id'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('users')
-        ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Counter;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -39,25 +40,10 @@ class Update extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'name' => 'sometimes|required|string|max:255',
-            'office_service_id' => 'nullable|exists:office_services,id,deleted_at,NULL',
-            'user_id' => 'nullable|exists:users,id,deleted_at,NULL',
-        ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:counters,id'];
-        }
+            'name'              => ['required', 'string', 'max:255', Rule::unique('counters')->ignore($this->id)->where(fn ($query) => $query->where('office_service_id', $this->office_service_id))->whereNull('deleted_at')],
+            'office_service_id' => ['required', Rule::exists('office_services', 'id')->whereNull('deleted_at')],
+        ];   
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('counters')
-        ]);
     }
 }

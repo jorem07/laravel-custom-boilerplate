@@ -5,6 +5,7 @@ namespace App\Http\Requests\Queue;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -43,21 +44,7 @@ class Update extends FormRequest
             'counter_id'        => 'required:exists:counters,id,deleted_at,NULL',
             'user_id'           => 'required'
         ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:queues,id'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('queues')
-        ]);
     }
 }

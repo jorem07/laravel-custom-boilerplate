@@ -5,7 +5,7 @@ namespace App\Http\Requests\Counter;
 use App\Traits\PayloadTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
-class Active extends FormRequest
+class Performance extends FormRequest
 {
     use PayloadTrait {
         PayloadTrait::prepareForValidation as payloadPrepareForValidation;
@@ -18,6 +18,9 @@ class Active extends FormRequest
 
     public function rules(): array
     {
-        return [];
+        return [
+            'office_service_id' => 'nullable|exists:office_services,id,deleted_at,NULL',
+            'limit' => 'nullable|integer|min:1|max:20',
+        ];
     }
 }

@@ -41,21 +41,7 @@ class Update extends FormRequest
         $validate = [
             'name' => 'required|unique:offices,name,'. $this->id . ',id,deleted_at,NULL',
         ];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:offices,id'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('offices')
-        ]);
     }
 }
