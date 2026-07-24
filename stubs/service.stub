@@ -17,5 +17,5 @@ class {{ class }}Service extends BaseService
         $this->repository = $repository;
     }
 
-    // You can override or add methods here to customize repository
+    // You can override or add methods here to customize service
 }
