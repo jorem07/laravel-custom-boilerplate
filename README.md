@@ -1,7 +1,7 @@
 <h1>INSTRUCTION:</h1>
 <h3>API CRUD Generation</h3>
 <ul>
-    <li>Firt create a model: "php artisan make:model {model_name} -m"</li> <i>(Note: this will create model with migration)</i>
+    <li>First create a model: "php artisan make:model {model_name} -m"</li> <i>(Note: this will create model with migration)</i>
     <li>Then create REST API: "php artisan app:request {model_name}"</li>
 </ul>
 
