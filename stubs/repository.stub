@@ -3,8 +3,7 @@
 namespace {{ namespace }};
 
 use App\Models\{{ class }};
-use App\Repositories\Contracts\{{ class }}RepositoryInterface;
-use App\Traits\RepositoryTrait;
+use App\Traits\QueryGenerator;
 
 /**
  * {{ class }}Repository
@@ -12,9 +11,9 @@ use App\Traits\RepositoryTrait;
  * This repository provides a base implementation for {{ class }} data access.
  * You can override or extend this class to customize query logic or add new methods.
  */
-class {{ class }}Repository implements {{ class }}RepositoryInterface
+class {{ class }}Repository
 {
-    use RepositoryTrait;
+    use QueryGenerator;
 
     // The Category model instance.
     protected {{ class }} $model;

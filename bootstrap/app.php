@@ -19,13 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
         //middleware
         $middleware->alias([
             'log.route' => \App\Http\Middleware\LogRoute::class,
+            'role'      => \App\Http\Middleware\CheckRole::class,
         ]);
 
-        // $middleware->group('api', [
-        //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        //     'throttle:api',
-        //     \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        // ]);
+        $middleware->redirectGuestsTo(fn () => null);
+
+        $middleware->group('api', [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
     })
     ->withExceptions(function ($exceptions) {
         $exceptions->render(function (ValidationException $e, Request $request) {

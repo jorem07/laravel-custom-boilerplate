@@ -51,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {   
+        \Illuminate\Support\Facades\RateLimiter::for('api', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
         VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
             $endpoint = explode('api/', $url);
             $new_endpoint = $endpoint[1];

@@ -57,10 +57,14 @@ class OfficeServiceService extends BaseService
 
     public function show($id, $payload = [], $relation = []): array
     {
-        $data = collect([$this->officeService->find($id)]);
+        $officeService = $this->officeService->find($id);
+        if ($officeService) {
+            $officeService->load(['office', 'requirements']);
+        }
+        $data = collect($officeService ? [$officeService] : []);
 
         $message = 'Showing Data.';
-        if (!$data) {
+        if (!$officeService) {
             $message = 'No result found.';
         }
 
@@ -74,9 +78,21 @@ class OfficeServiceService extends BaseService
     {
         DB::beginTransaction();
         try {
-
             $officeService = $this->officeService->store($payload);
 
+            if (isset($payload['requirements']) && is_array($payload['requirements'])) {
+                foreach ($payload['requirements'] as $index => $reqDesc) {
+                    $desc = is_string($reqDesc) ? trim($reqDesc) : (is_array($reqDesc) ? trim($reqDesc['description'] ?? '') : '');
+                    if (!empty($desc)) {
+                        $officeService->requirements()->create([
+                            'description' => $desc,
+                            'sort_order'  => $index + 1,
+                        ]);
+                    }
+                }
+            }
+
+            $officeService->load(['office', 'requirements']);
             $data = collect([$officeService]);
 
             DB::commit();
@@ -114,6 +130,21 @@ class OfficeServiceService extends BaseService
 
             $this->officeService->update($officeService, $payload);
 
+            if (isset($payload['requirements']) && is_array($payload['requirements'])) {
+                $officeService->requirements()->delete();
+
+                foreach ($payload['requirements'] as $index => $reqDesc) {
+                    $desc = is_string($reqDesc) ? trim($reqDesc) : (is_array($reqDesc) ? trim($reqDesc['description'] ?? '') : '');
+                    if (!empty($desc)) {
+                        $officeService->requirements()->create([
+                            'description' => $desc,
+                            'sort_order'  => $index + 1,
+                        ]);
+                    }
+                }
+            }
+
+            $officeService->load(['office', 'requirements']);
             $data = collect([$officeService]);
 
             DB::commit();

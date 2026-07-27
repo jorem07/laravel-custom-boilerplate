@@ -2,18 +2,17 @@
 
 namespace App\Services;
 
-use App\DTO\OfficeServiceCategory\OfficeServiceCategoryDTO;
-use App\Repositories\Contracts\OfficeServiceCategoryRepositoryInterface;
+use App\DTO\Display\DisplayDTO;
+use App\Repositories\Contracts\DisplayRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
-class OfficeServiceCategoryService extends BaseService
+class DisplayService extends BaseService
 {
+    protected DisplayRepositoryInterface $display;
 
-    protected OfficeServiceCategoryRepositoryInterface $officeServiceCategory;
-
-    public function __construct(OfficeServiceCategoryRepositoryInterface $officeServiceCategory)
+    public function __construct(DisplayRepositoryInterface $display)
     {
-        $this->officeServiceCategory = $officeServiceCategory;
+        $this->display = $display;
     }
 
     public function index($payload, array $searchable = [], $relation = []): array
@@ -24,12 +23,11 @@ class OfficeServiceCategoryService extends BaseService
         $order = $payload['sort']['order'] ?? null;
         $sort = $payload['sort']['column'] ?? null;
 
-
         $selected_relation = $this->format($relation);
-        $searchable = $this->getSearchable('App\\Models\\OfficeServiceCategory', $relation);
+        $searchable = $this->getSearchable('App\\Models\\Display', $relation);
 
-        $data = $this->officeServiceCategory->query($payload, $searchable, $selected_relation);
-        
+        $data = $this->display->query($payload, $searchable, $selected_relation);
+
         $total = $data->count();
 
         $list = $data->skip($skip)
@@ -38,7 +36,6 @@ class OfficeServiceCategoryService extends BaseService
                 $q->orderBy($sort, $order);
             })
             ->get();
-
 
         return [
             'message' => 'These are the results.',
@@ -50,23 +47,18 @@ class OfficeServiceCategoryService extends BaseService
             'skip' => $skip,
             'take' => $take,
             'total' => $total,
-            'body' => OfficeServiceCategoryDTO::fromCollection($list),
+            'body' => DisplayDTO::fromCollection($list),
             'searchable' => $searchable
         ];
     }
 
     public function show($id, $payload = [], $relation = []): array
     {
-        $data = collect([$this->officeServiceCategory->find($id)]);
-
-        $message = 'Showing Data.';
-        if (!$data) {
-            $message = 'No result found.';
-        }
+        $data = collect([$this->display->find($id)]);
 
         return [
-            'message' => $message,
-            'body' => OfficeServiceCategoryDTO::fromCollection($data)
+            'message' => 'Showing Data.',
+            'body' => DisplayDTO::fromCollection($data)
         ];
     }
 
@@ -74,15 +66,13 @@ class OfficeServiceCategoryService extends BaseService
     {
         DB::beginTransaction();
         try {
-
-            $officeServiceCategory = $this->officeServiceCategory->store($payload);
-
-            $data = collect([$officeServiceCategory]);
+            $display = $this->display->store($payload);
+            $data = collect([$display]);
 
             DB::commit();
             return [
-                'message' => 'Data created successfully.',
-                'body' => OfficeServiceCategoryDTO::fromCollection($data)
+                'message' => 'Display created successfully.',
+                'body' => DisplayDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -94,32 +84,30 @@ class OfficeServiceCategoryService extends BaseService
     {
         DB::beginTransaction();
         try {
-            $this->officeServiceCategory->delete($payload);
+            $this->display->delete($payload);
             DB::commit();
             return [
-                'message' => 'Data deleted successfully.',
+                'message' => 'Display deleted successfully.',
                 'body' => null
             ];
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
-    } 
+    }
 
-    public function update($id, $payload, $relation) : array
+    public function update($id, $payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
-            $officeServiceCategory = $this->officeServiceCategory->find($id);
-
-            $this->officeServiceCategory->update($officeServiceCategory, $payload);
-
-            $data = collect([$officeServiceCategory]);
+            $display = $this->display->find($id);
+            $this->display->update($display, $payload);
+            $data = collect([$display]);
 
             DB::commit();
             return [
-                'message' => 'Data updated successfully.',
-                'body' => OfficeServiceCategoryDTO::fromCollection($data)
+                'message' => 'Display updated successfully.',
+                'body' => DisplayDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();

@@ -18,12 +18,12 @@ class CounterService extends BaseService
     protected CounterRepositoryInterface $counter;
 
     protected array $defaultRelations = [
-        'user' => ['id', 'first_name', 'last_name'],
+        'user' => ['id', 'fullname'],
         'office_service' => ['id', 'name'],
     ];
 
     protected array $logRelations = [
-        'user' => ['id', 'first_name', 'last_name'],
+        'user' => ['id', 'fullname'],
         'counter' => ['id', 'name'],
     ];
 
@@ -214,6 +214,12 @@ class CounterService extends BaseService
         DB::beginTransaction();
         try {
             $counter = Counter::query()->lockForUpdate()->findOrFail($payload['counter_id']);
+
+            if (!$counter->user_id) {
+                throw ValidationException::withMessages([
+                    'counter_id' => ['No user is currently logged in to this counter.'],
+                ]);
+            }
 
             $closedLog = $this->closeActiveLogForCounter($counter->id);
             $counter->update(['user_id' => null]);

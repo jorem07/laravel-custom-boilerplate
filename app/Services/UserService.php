@@ -73,13 +73,22 @@ class UserService extends BaseService
 
     public function store($payload, $relation = []): array
     {
-        if (isset($payload['password'])) $payload['password'] = Hash::make($payload['password']);
+        $password = $payload['password'] ?? env('INITIAL_USER_PASSWORD', 'password123');
+        $payload['password'] = $password;
+
+        $roleName = $payload['role'] ?? 'Service Officer';
+        $roleSlug = match ($roleName) {
+            'System Administrator', 'admin' => 'admin',
+            'Service Officer', 'officer' => 'officer',
+            default => \Illuminate\Support\Str::slug($roleName),
+        };
 
         DB::beginTransaction();
         try {
-
             $user = $this->user->store($payload);
-            $user->assign($payload['role_id']);
+
+            \Silber\Bouncer\BouncerFacade::role()->firstOrCreate(['name' => $roleSlug, 'title' => $roleName]);
+            $user->assign($roleSlug);
 
             $data = collect([$user]);
 
@@ -94,11 +103,11 @@ class UserService extends BaseService
         }
     }
 
-    public function delete($payload, $relation = []): array
+    public function delete($id, $payload = []): array
     {
         DB::beginTransaction();
         try {
-            $this->user->delete($payload);
+            $this->user->delete($id);
             DB::commit();
             return [
                 'message' => 'Data deleted successfully.',
@@ -112,7 +121,11 @@ class UserService extends BaseService
 
     public function update($id, $payload, $relation) : array
     {
-        if (isset($payload['password'])) $payload['password'] = Hash::make($payload['password']);
+        if (isset($payload['password']) && !empty($payload['password'])) {
+            $payload['password'] = $payload['password'];
+        } else {
+            unset($payload['password']);
+        }
 
         DB::beginTransaction();
         try {
@@ -120,7 +133,21 @@ class UserService extends BaseService
 
             $this->user->update($user, $payload);
 
-            $user->roles()->sync($payload['role_id']);
+            if (isset($payload['role'])) {
+                $roleName = $payload['role'];
+                $roleSlug = match ($roleName) {
+                    'System Administrator', 'admin' => 'admin',
+                    'Service Officer', 'officer' => 'officer',
+                    default => \Illuminate\Support\Str::slug($roleName),
+                };
+                \Silber\Bouncer\BouncerFacade::role()->firstOrCreate(['name' => $roleSlug, 'title' => $roleName]);
+                
+                // Clear old roles and assign new one
+                foreach ($user->roles as $oldRole) {
+                    $user->retract($oldRole->name);
+                }
+                $user->assign($roleSlug);
+            }
 
             $user->refresh();
             $data = collect([$user]);

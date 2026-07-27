@@ -7,7 +7,6 @@ use App\Traits\SearchGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -29,8 +28,13 @@ class OfficeService extends Model
      */
     protected $fillable = [
         'name',
+        'code',
+        'letter',
+        'avg_time',
+        'priority',
+        'status',
+        'color',
         'office_id',
-        'office_service_category_id'
     ];
 
     /**
@@ -64,14 +68,13 @@ class OfficeService extends Model
         return $this->belongsTo(Office::class, 'office_id', 'id');
     }
 
-    public function office_service_category() : BelongsTo
+    public function requirements()
     {
-        return $this->belongsTo(OfficeServiceCategory::class, 'office_service_category_id', 'id');
+        return $this->hasMany(ServiceRequirement::class, 'office_service_id', 'id')->orderBy('sort_order');
     }
 
-    public function counters() : HasMany
+    public function queues(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Counter::class, 'office_service_id', 'id');
+        return $this->hasMany(Queue::class, 'office_service_id', 'id');
     }
 }
-

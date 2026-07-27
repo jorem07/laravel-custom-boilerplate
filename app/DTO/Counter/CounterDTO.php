@@ -33,7 +33,7 @@ class CounterDTO
     {
         $userName = null;
         if ($counter->relationLoaded('user') && $counter->user) {
-            $userName = trim("{$counter->user->first_name} {$counter->user->last_name}");
+            $userName = $counter->user->fullname;
         }
 
         return new self(

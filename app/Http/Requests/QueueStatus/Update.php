@@ -5,7 +5,6 @@ namespace App\Http\Requests\QueueStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
-use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -40,9 +39,23 @@ class Update extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'name'      => ['required', Rule::unique($this->getTargetTable(), 'name')->ignore($this->id)->whereNull('deleted_at')],
+            'name'      => 'required|unique:queue_statuses,name,' . $this->id . ',id,deleted_at,NULL',
         ];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:queue_statuses,id'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        $this->merge([
+            'id'    => $this->route('queue_statuses')
+        ]);
     }
 }

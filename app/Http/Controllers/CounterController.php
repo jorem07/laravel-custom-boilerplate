@@ -8,11 +8,9 @@ use App\Http\Requests\Counter\Index;
 use App\Http\Requests\Counter\Login;
 use App\Http\Requests\Counter\Logout;
 use App\Http\Requests\Counter\Logs;
-use App\Http\Requests\Counter\Performance;
 use App\Http\Requests\Counter\Show;
 use App\Http\Requests\Counter\Store;
 use App\Http\Requests\Counter\Update;
-use App\Services\CounterPerformanceService;
 use App\Services\CounterService;
 use Illuminate\Http\JsonResponse;
 
@@ -23,14 +21,12 @@ class CounterController extends Controller
     protected array $searchable = [];
 
     protected array $relation = [
-        'user' => ['id', 'first_name', 'last_name'],
+        'user' => ['id', 'fullname'],
         'office_service' => ['id', 'name'],
     ];
 
-    public function __construct(
-        CounterService $counterService,
-        protected CounterPerformanceService $counterPerformanceService,
-    ) {
+    public function __construct(CounterService $counterService)
+    {
         $this->counterService = $counterService;
     }
 
@@ -100,17 +96,6 @@ class CounterController extends Controller
     {
         $payload = $request->validated();
         $data = $this->counterService->logout($payload, $this->relation);
-
-        return $this->getJsonResponse($data);
-    }
-
-    public function performance(Performance $request): JsonResponse
-    {
-        $payload = $request->validated();
-        $data = $this->counterPerformanceService->getTopPerformances(
-            $payload['office_service_id'] ?? null,
-            $payload['limit'] ?? 5,
-        );
 
         return $this->getJsonResponse($data);
     }

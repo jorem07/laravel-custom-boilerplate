@@ -24,7 +24,7 @@ class UserRepository implements UserRepositoryInterface
         $search = $payload['search'] ?? [];
         $full_search = $payload['full_search'] ?? null;
 
-        $status = isset($payload['status'])  ? [$payload['status']] : [true, false];
+        $status = isset($payload['status'])  ? [$payload['status']] : ['Active', 'Inactive'];
 
         $data = $this->model->newQuery()
             ->with($selected_relation)
@@ -66,6 +66,7 @@ class UserRepository implements UserRepositoryInterface
 
     public function delete($id): bool
     {
-        return $this->model->where('id', $id)->update(['deleted_at' => \Carbon\Carbon::now()]);
+        $user = $this->model->find($id);
+        return $user ? (bool)$user->delete() : false;
     }
 }

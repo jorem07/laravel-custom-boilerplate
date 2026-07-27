@@ -5,7 +5,6 @@ namespace App\Http\Requests\Queue;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Show
@@ -39,9 +38,12 @@ class Show extends FormRequest
     public function rules(): array
     {
         // Add your validation rules here
-        $validate = [
-            'id'    => 'required|exists:queues,id,deleted_at,NULL'
-        ];
+        $validate = [];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:queues,id'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
     }
@@ -50,10 +52,8 @@ class Show extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
-        $id = DB::table('queues')->where('uuid', $this->route('queues'))->first()->id ?? 0;
-        
         $this->merge([
-            'id'    =>  $id
+            'id'    => $this->route('queues')
         ]);
     }
 }

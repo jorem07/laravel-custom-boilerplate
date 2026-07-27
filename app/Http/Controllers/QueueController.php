@@ -12,6 +12,8 @@ use App\Http\Requests\Queue\Next;
 use App\Http\Requests\Queue\Current;
 use App\Services\QueueService;
 
+use Illuminate\Http\Request;
+
 class QueueController extends Controller
 {
     protected QueueService $queueService;
@@ -20,8 +22,9 @@ class QueueController extends Controller
 
     protected array $relation = [
         'queue_status' => ['id', 'name'],
+        'office_service' => ['id', 'name', 'letter'],
         'counter' => ['id', 'name'],
-        'user' => ['id', 'first_name', 'last_name'],
+        'user' => ['id', 'fullname'],
     ];
 
     public function __construct(QueueService $queueService)
@@ -59,7 +62,7 @@ class QueueController extends Controller
         $data = $this->queueService->update($id, $payload, $this->relation);
 
         return $this->getJsonResponse($data);
-    }
+    } 
 
     public function delete($id, Delete $request) : JsonResponse
     {
@@ -81,6 +84,30 @@ class QueueController extends Controller
         $payload = $request->validated();
         $data = $this->queueService->next($payload, $this->relation);
 
+        return $this->getJsonResponse($data);
+    }
+
+    public function complete(Request $request): JsonResponse
+    {
+        $data = $this->queueService->complete($request->all(), $this->relation);
+        return $this->getJsonResponse($data);
+    }
+
+    public function skip(Request $request): JsonResponse
+    {
+        $data = $this->queueService->skip($request->all(), $this->relation);
+        return $this->getJsonResponse($data);
+    }
+
+    public function recall(Request $request): JsonResponse
+    {
+        $data = $this->queueService->recall($request->all(), $this->relation);
+        return $this->getJsonResponse($data);
+    }
+
+    public function transfer(Request $request): JsonResponse
+    {
+        $data = $this->queueService->transfer($request->all(), $this->relation);
         return $this->getJsonResponse($data);
     }
 }

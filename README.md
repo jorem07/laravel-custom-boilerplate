@@ -1,10 +1,3 @@
-<h1>INSTRUCTION:</h1>
-<h3>API CRUD Generation</h3>
-<ul>
-    <li>First create a model: "php artisan make:model {model_name} -m"</li> <i>(Note: this will create model with migration)</i>
-    <li>Then create REST API: "php artisan app:request {model_name}"</li>
-</ul>
-
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

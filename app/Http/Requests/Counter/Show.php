@@ -39,7 +39,21 @@ class Show extends FormRequest
     {
         // Add your validation rules here
         $validate = [];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:counters,id'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        $this->merge([
+            'id'    => $this->route('counters')
+        ]);
     }
 }

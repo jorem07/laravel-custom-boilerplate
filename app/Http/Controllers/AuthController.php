@@ -34,7 +34,7 @@ class AuthController extends Controller
         return response()->json($data, $status);
     }
 
-    public function logout(Request $request): string
+    public function logout(Request $request): JsonResponse
     {
         $data = $this->AuthService->logout($request);
         return response()->json($data);
@@ -43,11 +43,10 @@ class AuthController extends Controller
     public function register(Request $request) : JsonResponse
     {
         $payload = $request->validate([
-            "first_name"    =>  "required",
-            "last_name"     =>  "required",
-            "middle_name"   =>  "nullable",
-            "email"         =>  "required",
+            "fullname"      =>  "required",
+            "email"         =>  "required|email",
             "password"      =>  "required",
+            "phone_number"  =>  "nullable",
             "birthday"      =>  "required"
         ]);
         

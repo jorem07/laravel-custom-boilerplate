@@ -5,7 +5,6 @@ namespace App\Http\Requests\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
-use Illuminate\Validation\Rule;
 
 /**
  * Store
@@ -40,16 +39,33 @@ class Store extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'first_name'    => 'required|string',
-            'middle_name'   => 'required|string',
-            'last_name'     => 'required|string',
-            'allow_login'   => 'required|boolean',
-            'status'        => 'required|boolean',
-            'password'      => 'required|string|confirmed',
-            'email'         => ['required', Rule::unique('users')->whereNull('deleted_at')],
-            'role_id'       => 'required|array|exists:roles,id,deleted_at,NULL'
+            'fullname'      => 'required|string',
+            'email'         => 'required|email|unique:users,email,NULL,NULL,deleted_at,NULL',
+            'phone_number'  => 'nullable|string',
+            'role'          => 'required|string',
+            'assignment'    => 'nullable|string',
+            'status'        => 'required|string',
+            'password'      => 'nullable|string',
+            'role_id'       => 'nullable|array'
         ];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:users,id'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        $statusVal = $this->status === 'Active' || $this->status === true || $this->status === 1 || $this->status === '1';
+
+        $this->merge([
+            'id'          => $this->route('users'),
+            'allow_login' => $statusVal,
+        ]);
     }
 }

@@ -20,4 +20,9 @@ class Active extends FormRequest
     {
         return [];
     }
+
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+    }
 }

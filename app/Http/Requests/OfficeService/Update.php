@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
 
+use Illuminate\Validation\Rule;
+
 /**
  * Update
  *
@@ -37,13 +39,33 @@ class Update extends FormRequest
      */
     public function rules(): array
     {
-        // Add your validation rules here
         $validate = [
-            'name'                       => 'required|unique:office_services,name,' . $this->id . ',deleted_at,NULL',
-            'office_id'                  => 'required|exists:offices,id,deleted_at,NULL',
-            'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL'
+            'name'      => ['required', Rule::unique('office_services', 'name')->ignore($this->id)->whereNull('deleted_at')],
+            'office_id' => ['nullable', Rule::exists('offices', 'id')->whereNull('deleted_at')],
+            'code'      => ['nullable', 'string', Rule::unique('office_services', 'code')->ignore($this->id)],
+            'letter'    => ['nullable', 'string'],
+            'avg_time'  => ['nullable', 'string'],
+            'priority'  => ['nullable', 'string'],
+            'status'    => ['nullable', 'string'],
+            'color'     => ['nullable', 'string'],
+            'requirements'   => ['nullable', 'array'],
+            'requirements.*' => ['nullable', 'string'],
         ];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:office_services,id'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        $this->merge([
+            'id'    => $this->route('office_services')
+        ]);
     }
 }

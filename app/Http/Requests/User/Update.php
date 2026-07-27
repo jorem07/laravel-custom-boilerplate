@@ -5,7 +5,6 @@ namespace App\Http\Requests\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
-use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -40,18 +39,23 @@ class Update extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'first_name'      => 'required|string',
-            'middle_name'     => 'required|string',
-            'last_name'       => 'required|string',
-            'allow_login'     => 'required|boolean',
-            'status'          => 'required|boolean',
+            'fullname'        => 'required|string',
+            'email'           => 'required|email|unique:users,email,' . $this->id . ',id,deleted_at,NULL',
+            'phone_number'    => 'nullable|string',
+            'role'            => 'sometimes|required|string',
+            'assignment'      => 'nullable|string',
+            'status'          => 'required|string',
             'current_password'=> $this->is_admin ? 'nullable' : 'required|current_password',
             'new_password'    => 'nullable|string',
-            'password'        => 'nullable|string|confirmed',
-            'email'           => ['required', Rule::unique('users')->ignore($this->id)->whereNull('deleted_at')],
-            'role_id'         => 'required|array|exists:roles,id,deleted_at,NULL',
+            'password'        => 'nullable|string',
+            'role_id'         => 'nullable|array',
             'is_admin'        => 'required|boolean'
         ];
+
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $validate['id'] = ['required', 'exists:users,id,deleted_at,NULL'];
+        }
         
         return array_merge($this->payloadTaits(), $validate);
     }
@@ -60,13 +64,15 @@ class Update extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
-        $user = $this->user()->load(['roles']);
+        $user = $this->user()?->load(['roles']);
+        $roles = $user ? $user->roles->pluck('name')->toArray() : [];
 
-        $roles = $user->roles->pluck('name')->toArray();
+        $statusVal = $this->status === 'Active' || $this->status === true || $this->status === 1 || $this->status === '1';
 
         $this->merge([
-            'password'  => $this->new_password,
-            'is_admin'  => (bool) array_intersect(['admin', 'super-admin'], $roles)
+            'id'          => $this->route('users'),
+            'allow_login' => $statusVal,
+            'is_admin'    => (bool) array_intersect(['admin', 'super-admin'], $roles)
         ]);
     }
 }

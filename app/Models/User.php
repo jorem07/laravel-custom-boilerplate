@@ -22,16 +22,26 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var list<string>
      */
     protected $fillable = [
-        'first_name',
-        'last_name',
-        'middle_name',
+        'fullname',
         'email',
+        'phone_number',
+        'assignment',
+        'status',
+        'is_online',
+        'last_active_at',
+        'birthday',
         'password',
         'email_verified_at',
         'allow_login',
-        'status',
         'created_by'
     ];
+
+    protected $appends = ['name'];
+
+    public function getNameAttribute(): string
+    {
+        return $this->fullname ?? '';
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -72,4 +82,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->excludedColumn;
     }
 
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class, 'created_by', 'id');
+    }
 }

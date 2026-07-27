@@ -50,11 +50,11 @@ class GenerateMultipleRequest extends Command
                 $this->info("Request file {$file_path} generated.");
 
                 Bouncer::role()->firstOrCreate([
-                    'name' => 'super-admin',
-                    'title' => 'Super Administrator',
+                    'name' => 'admin',
+                    'title' => 'System Administrator',
                 ]);
 
-                Bouncer::allow('super-admin')->everything();
+                Bouncer::allow('admin')->everything();
 
                 Bouncer::ability()->firstOrCreate([
                     'name' => $ability,
@@ -64,41 +64,17 @@ class GenerateMultipleRequest extends Command
                 $this->error("{$file_path} already exist. Skipped.");
         }
 
-        // GENERATE REPOSITORY CLASS
+        // GENERATE SERVICE CLASS
         $directory = app_path("Repositories");
         $this->checkDirectory($directory);
 
-        $repository_path = "{$directory}/{$model_name}Repository.php";
+        $file_path = "{$directory}/{$model_name}Repository.php";
 
-        if (!file_exists($repository_path)) {
-            File::put($repository_path, $this->generateRepositoryStub($model_name));
-            $this->info("Repository file {$repository_path}  generated.");
+        if (!file_exists($file_path)) {
+            File::put($file_path, $this->generateRepositoryStub($model_name));
+            $this->info("Repository file {$file_path}  generated.");
         } else
-            $this->error("{$repository_path} already exist. Skipped.");
-
-        // GENERATE REPOSITORY CLASS
-        $directory = app_path("Repositories/Contracts");
-        $this->checkDirectory($directory);
-
-        $interface_path = "{$directory}/{$model_name}RepositoryInterface.php";
-
-        if (!file_exists($interface_path)) {
-            File::put($interface_path, $this->generateRepositoryInterfaceStub($model_name));
-            $this->info("Repository Interface file {$interface_path}  generated.");
-        } else
-            $this->error("{$interface_path} already exist. Skipped.");
-
-        // GENERATE SERVICE CLASS
-        $directory = app_path("Services");
-        $this->checkDirectory($directory);
-
-        $service_path = "{$directory}/{$model_name}Service.php";
-
-        if (!file_exists($service_path)) {
-            File::put($service_path, $this->generateServiceStub($model_name));
-            $this->info("Service file {$service_path}  generated.");
-        } else
-            $this->error("{$service_path} already exist. Skipped.");
+            $this->error("{$file_path} already exist. Skipped.");
 
         // GENERATE CONTROLLER CLASS
         $directory = app_path("Http/Controllers");
@@ -150,42 +126,11 @@ class GenerateMultipleRequest extends Command
         return $stub_content;
     }
 
-    protected function generateRepositoryInterfaceStub($model_name): string
-    {
-        $stub_content = File::get(base_path('stubs/repository-interface.stub'));
-        $replacements = [
-            'namespace' => "App\\Repositories\\Contracts",
-            'class' => ucfirst($model_name)
-        ];
-
-        foreach ($replacements as $key => $value)
-            $stub_content = str_replace("{{ $key }}", $value, $stub_content);
-
-        return $stub_content;
-    }
-
     protected function generateControllerStub($model_name): string
     {
-        // $stub_content = File::get(base_path('stubs/controller.stub'));
-        $stub_content = File::get(base_path('stubs/controller-service.stub'));
+        $stub_content = File::get(base_path('stubs/controller.stub'));
         $replacements = [
             'namespace' => "App\\Http\\Controllers",
-            'class' => ucfirst($model_name),
-            'subname' => strtolower($model_name)
-        ];
-
-        foreach ($replacements as $key => $value)
-            $stub_content = str_replace("{{ $key }}", $value, $stub_content);
-
-        return $stub_content;
-    }
-
-    protected function generateServiceStub($model_name): string
-    {
-        // $stub_content = File::get(base_path('stubs/controller.stub'));
-        $stub_content = File::get(base_path('stubs/service.stub'));
-        $replacements = [
-            'namespace' => "App\\Http\\Services",
             'class' => ucfirst($model_name),
             'subname' => strtolower($model_name)
         ];

@@ -44,13 +44,6 @@ class {{ class }} extends Model
      */
     protected $hidden = [];
 
-    protected $excludedColumn = [];
-
-    public function getExcludedColumn(): array
-    {
-        return $this->excludedColumn;
-    }
-
     // You can override or add methods here to customize model
 }
 

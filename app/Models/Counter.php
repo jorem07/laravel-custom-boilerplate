@@ -29,6 +29,8 @@ class Counter extends Model
      */
     protected $fillable = [
         'name',
+        'location',
+        'queue_display_status',
         'user_id',
         'office_service_id',
     ];
@@ -72,9 +74,9 @@ class Counter extends Model
         return $this->hasMany(CounterUserLog::class, 'counter_id', 'id');
     }
 
-    public function performances(): HasMany
+    public function queues(): HasMany
     {
-        return $this->hasMany(CounterPerformance::class, 'counter_id', 'id');
+        return $this->hasMany(Queue::class, 'counter_id', 'id');
     }
 }
 

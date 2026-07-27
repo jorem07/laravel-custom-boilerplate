@@ -1,28 +1,32 @@
 <?php
 
-namespace App\Traits;
+namespace App\Services;
 
-use App\DTO\BaseDTO;
+use App\DTO\Announcement\AnnouncementDTO;
+use App\Repositories\Contracts\AnnouncementRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
-trait ServiceTrait
+class AnnouncementService extends BaseService
 {
-    /**
-     * Get all data.
-     */
+    protected AnnouncementRepositoryInterface $announcement;
+
+    public function __construct(AnnouncementRepositoryInterface $announcement)
+    {
+        $this->announcement = $announcement;
+    }
+
     public function index($payload, array $searchable = [], $relation = []): array
     {
-        $take = $payload['show'] ?? 10;
+        $take = $payload['show'] ?? 100;
         $page = $payload['page'] ?? 1;
         $skip = ($page > 1) ? ($take * ($page - 1)) : 0;
-        $order = $payload['sort']['order'] ?? null;
-        $sort = $payload['sort']['column'] ?? null;
-
+        $order = $payload['sort']['order'] ?? 'desc';
+        $sort = $payload['sort']['column'] ?? 'id';
 
         $selected_relation = $this->format($relation);
-        $searchable = $this->getSearchable(self::getModel(), $relation);
+        $searchable = $this->getSearchable('App\\Models\\Announcement', $relation);
 
-        $data = $this->repository->query($payload, $searchable, $selected_relation);
+        $data = $this->announcement->query($payload, $searchable, $selected_relation);
 
         $total = $data->count();
 
@@ -32,7 +36,6 @@ trait ServiceTrait
                 $q->orderBy($sort, $order);
             })
             ->get();
-
 
         return [
             'message' => 'These are the results.',
@@ -44,18 +47,14 @@ trait ServiceTrait
             'skip' => $skip,
             'take' => $take,
             'total' => $total,
-            'body' => BaseDTO::fromCollection($list),
+            'body' => AnnouncementDTO::fromCollection($list),
             'searchable' => $searchable
         ];
     }
 
-    /**
-     * Get specific data.
-     * @param int $id
-     */
     public function show($id, $payload = [], $relation = []): array
     {
-        $data = collect([$this->repository->find($id)]);
+        $data = collect([$this->announcement->find($id)]);
 
         $message = 'Showing Data.';
         if (!$data) {
@@ -64,26 +63,21 @@ trait ServiceTrait
 
         return [
             'message' => $message,
-            'body' => BaseDTO::fromCollection($data)
+            'body' => AnnouncementDTO::fromCollection($data)
         ];
     }
 
-    /**
-     * Store data.
-     */
     public function store($payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
-
-            $sample = $this->repository->store($payload);
-
-            $data = collect([$sample]);
+            $announcement = $this->announcement->store($payload);
+            $data = collect([$announcement]);
 
             DB::commit();
             return [
-                'message' => 'Data created successfully.',
-                'body' => BaseDTO::fromCollection($data)
+                'message' => 'Announcement created successfully.',
+                'body' => AnnouncementDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -91,56 +85,38 @@ trait ServiceTrait
         }
     }
 
-    /**
-     * Delete specific data.
-     * @param int $id
-     */
     public function delete($payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
-            $this->repository->delete($payload);
+            $this->announcement->delete($payload);
             DB::commit();
             return [
-                'message' => 'Data deleted successfully.',
+                'message' => 'Announcement deleted successfully.',
                 'body' => null
             ];
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
-    } 
+    }
 
-    /**
-     * Update specific data.
-     *  @param int $id
-     */
-    public function update($id, $payload, $relation) : array
+    public function update($id, $payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
-            $sample = $this->repository->find($id);
-
-            $this->repository->update($sample, $payload);
-
-            $data = collect([$sample]);
+            $announcement = $this->announcement->find($id);
+            $this->announcement->update($announcement, $payload);
+            $data = collect([$announcement]);
 
             DB::commit();
             return [
-                'message' => 'Data updated successfully.',
-                'body' => BaseDTO::fromCollection($data)
+                'message' => 'Announcement updated successfully.',
+                'body' => AnnouncementDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
-    }
-
-    private function getModel() : string
-    {
-        $repo = (new \ReflectionClass($this))->getProperty('repository')->getValue($this);
-        $model = class_basename((new \ReflectionClass($repo))->getProperty('model')->getValue($repo));
-
-        return "App\\Models\\{$model}";
     }
 }

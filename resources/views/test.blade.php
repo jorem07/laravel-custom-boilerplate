@@ -19,10 +19,6 @@
         .logged-in { color: #047857; font-weight: 600; }
         .logged-out { color: #71717a; }
         h2 { margin-top: 0; font-size: 1.1rem; }
-        .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: #fff; }
-        .badge-green { background: #16a34a; }
-        .badge-orange { background: #ea580c; }
-        .badge-red { background: #dc2626; }
     </style>
 </head>
 <body>
@@ -83,21 +79,6 @@
         </tbody>
     </table>
 
-    <h2>Top Counters Performance (today)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Counter</th>
-                <th>Served</th>
-                <th>Avg Time</th>
-                <th>Efficiency</th>
-            </tr>
-        </thead>
-        <tbody id="performance-body">
-            <tr><td colspan="4" class="empty">No performance data yet.</td></tr>
-        </tbody>
-    </table>
-
     <h2>Queue</h2>
     <table>
         <thead>
@@ -106,13 +87,11 @@
                 <th>Status</th>
                 <th>Counter</th>
                 <th>User</th>
-                <th>Est. Wait</th>
-                <th>Est. Return</th>
                 <th>Started</th>
             </tr>
         </thead>
         <tbody id="queue-body">
-            <tr><td colspan="7" class="empty">No queue entries yet.</td></tr>
+            <tr><td colspan="5" class="empty">No queue entries yet.</td></tr>
         </tbody>
     </table>
 
@@ -124,45 +103,12 @@
             const queueBody = document.getElementById('queue-body');
             const counterBody = document.getElementById('counter-body');
             const logBody = document.getElementById('log-body');
-            const performanceBody = document.getElementById('performance-body');
             const called = document.getElementById('called');
-            const apiBase = '/api';
-
-            const efficiencyBadgeClass = (value) => {
-                if (value >= 90) return 'badge-green';
-                if (value >= 85) return 'badge-orange';
-                return 'badge-red';
-            };
-
-            const formatEstimate = (minutes, datetime) => {
-                if (minutes == null && !datetime) return '—';
-                if (minutes != null) return `${minutes} mins`;
-                return datetime ?? '—';
-            };
-
-            const renderPerformances = (performances) => {
-                if (!performances || performances.length === 0) {
-                    performanceBody.innerHTML = '<tr><td colspan="4" class="empty">No performance data yet.</td></tr>';
-                    return;
-                }
-
-                performanceBody.innerHTML = performances.map((item) => `
-                    <tr>
-                        <td>${item.counter_name}</td>
-                        <td>${item.served}</td>
-                        <td>${item.avg_time_label ?? item.avg_time_minutes + ' mins'}</td>
-                        <td>
-                            <span class="badge ${efficiencyBadgeClass(item.efficiency_percent)}">
-                                ${Math.round(item.efficiency_percent)}%
-                            </span>
-                        </td>
-                    </tr>
-                `).join('');
-            };
+            const apiBase = '/api-queuing';
 
             const renderQueues = (queues) => {
                 if (!queues || queues.length === 0) {
-                    queueBody.innerHTML = '<tr><td colspan="7" class="empty">No queue entries yet.</td></tr>';
+                    queueBody.innerHTML = '<tr><td colspan="5" class="empty">No queue entries yet.</td></tr>';
                     return;
                 }
 
@@ -172,8 +118,6 @@
                         <td>${queue.queue_statuses_name}</td>
                         <td>${queue.counter_name ?? queue.counter_id ?? '—'}</td>
                         <td>${queue.user_name ?? queue.user_id ?? '—'}</td>
-                        <td>${formatEstimate(queue.estimated_wait_minutes, null)}</td>
-                        <td>${queue.estimated_time_return ?? '—'}</td>
                         <td>${queue.time_start ?? '—'}</td>
                     </tr>
                 `).join('');
@@ -239,7 +183,6 @@
                 renderQueues(payload.body ?? []);
                 renderCounters(payload.counters ?? []);
                 renderLogs(payload.counter_logs ?? []);
-                renderPerformances(payload.counter_performances ?? []);
 
                 if (payload.action === 'next') {
                     renderCalled(payload.called ?? null, payload.message);
@@ -248,28 +191,15 @@
 
             const loadInitialData = async () => {
                 try {
-                    const token = localStorage.getItem('auth_token');
-                    const authHeaders = {
-                        'Accept': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    };
-
-                    const [queueRes, counterRes, logRes, perfRes] = await Promise.all([
-                        fetch(`${apiBase}/queues/current`, { headers: authHeaders }),
-                        fetch(`${apiBase}/counters/active`, { headers: authHeaders }),
-                        fetch(`${apiBase}/counter-user-logs`, { headers: authHeaders }),
-                        fetch(`${apiBase}/counters/performance`, { headers: authHeaders }),
+                    const [queueRes, counterRes, logRes] = await Promise.all([
+                        fetch(`${apiBase}/queues/current`),
+                        fetch(`${apiBase}/counters/active`),
+                        fetch(`${apiBase}/counter-user-logs`),
                     ]);
-
-                    if (!queueRes.ok || !counterRes.ok || !logRes.ok || !perfRes.ok) {
-                        status.textContent = 'Failed to load initial data (unauthorized or server error).';
-                        return;
-                    }
 
                     const queueData = await queueRes.json();
                     const counterData = await counterRes.json();
                     const logData = await logRes.json();
-                    const perfData = await perfRes.json();
 
                     applyPayload({
                         message: 'Initial data loaded.',
@@ -277,7 +207,6 @@
                         body: queueData.body ?? [],
                         counters: queueData.others?.counters ?? counterData.body ?? [],
                         counter_logs: queueData.others?.counter_logs ?? logData.body ?? [],
-                        counter_performances: queueData.others?.counter_performances ?? perfData.body ?? [],
                     });
                 } catch (error) {
                     status.textContent = 'Failed to load initial data.';
@@ -300,14 +229,11 @@
                 });
 
             const postJson = async (url, body = {}) => {
-                const token = localStorage.getItem('auth_token');
-                
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                     },
                     body: JSON.stringify(body),
                 });
@@ -371,7 +297,6 @@
                     called: data.others?.called ?? null,
                     counters: data.others?.counters ?? [],
                     counter_logs: data.others?.counter_logs ?? [],
-                    counter_performances: data.others?.counter_performances ?? [],
                     action: 'next',
                 });
             });
