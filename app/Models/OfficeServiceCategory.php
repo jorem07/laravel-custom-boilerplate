@@ -9,12 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Counter
+ * OfficeServiceCategory
  *
- * This is the Eloquent model for the Counter entity.
+ * This is the Eloquent model for the OfficeServiceCategory entity.
  * You can override or extend this class to add custom logic, relationships, or scopes.
  */
-class Counter extends Model
+class OfficeServiceCategory extends Model
 {
     // Use Laravel traits for factory, soft deletes, and custom search functionality
     use HasFactory, SoftDeletes, SearchGenerator;
@@ -25,7 +25,9 @@ class Counter extends Model
      *
      * @var array
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'type'
+    ];
 
     /**
      * The relationships that should always be loaded.
@@ -43,6 +45,15 @@ class Counter extends Model
      */
     protected $hidden = [];
 
+    protected $excludedColumn = [
+        'token',
+        'deleted_at'
+    ];
+
     // You can override or add methods here to customize model
+    public function getExcludedColumn(): array
+    {
+        return $this->excludedColumn;
+    }
 }
 

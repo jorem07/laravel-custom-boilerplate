@@ -123,17 +123,4 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Frontend Application URL
-    |--------------------------------------------------------------------------
-    |
-    | This is the base URL of the frontend application. It is used for
-    | generating QR code tracking URLs that customers can scan on
-    | their mobile phones to track their queue status.
-    |
-    */
-
-    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
-
 ];

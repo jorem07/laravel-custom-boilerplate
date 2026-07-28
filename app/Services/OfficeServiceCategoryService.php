@@ -2,19 +2,18 @@
 
 namespace App\Services;
 
-use App\DTO\User\UserDTO;
-use App\Events\TestingEvent;
-use App\Repositories\Contracts\UserRepositoryInterface;
+use App\DTO\OfficeServiceCategory\OfficeServiceCategoryDTO;
+use App\Repositories\Contracts\OfficeServiceCategoryRepositoryInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
-class UserService extends BaseService
+class OfficeServiceCategoryService extends BaseService
 {
-    protected UserRepositoryInterface $user;
 
-    public function __construct(UserRepositoryInterface $user)
+    protected OfficeServiceCategoryRepositoryInterface $officeServiceCategory;
+
+    public function __construct(OfficeServiceCategoryRepositoryInterface $officeServiceCategory)
     {
-        $this->user = $user;
+        $this->officeServiceCategory = $officeServiceCategory;
     }
 
     public function index($payload, array $searchable = [], $relation = []): array
@@ -27,10 +26,10 @@ class UserService extends BaseService
 
 
         $selected_relation = $this->format($relation);
-        $searchable = $this->getSearchable('App\\Models\\User', $relation);
+        $searchable = $this->getSearchable('App\\Models\\OfficeServiceCategory', $relation);
 
-        $data = $this->user->query($payload, $searchable, $selected_relation);
-
+        $data = $this->officeServiceCategory->query($payload, $searchable, $selected_relation);
+        
         $total = $data->count();
 
         $list = $data->skip($skip)
@@ -51,14 +50,14 @@ class UserService extends BaseService
             'skip' => $skip,
             'take' => $take,
             'total' => $total,
-            'body' => UserDTO::fromCollection($list),
+            'body' => OfficeServiceCategoryDTO::fromCollection($list),
             'searchable' => $searchable
         ];
     }
 
     public function show($id, $payload = [], $relation = []): array
     {
-        $data = collect([$this->user->find($id)]);
+        $data = collect([$this->officeServiceCategory->find($id)]);
 
         $message = 'Showing Data.';
         if (!$data) {
@@ -67,26 +66,23 @@ class UserService extends BaseService
 
         return [
             'message' => $message,
-            'body' => UserDTO::fromCollection($data)
+            'body' => OfficeServiceCategoryDTO::fromCollection($data)
         ];
     }
 
     public function store($payload, $relation = []): array
     {
-        if (isset($payload['password'])) $payload['password'] = Hash::make($payload['password']);
-
         DB::beginTransaction();
         try {
 
-            $user = $this->user->store($payload);
-            $user->assign($payload['role_id']);
+            $officeServiceCategory = $this->officeServiceCategory->store($payload);
 
-            $data = collect([$user]);
+            $data = collect([$officeServiceCategory]);
 
             DB::commit();
             return [
                 'message' => 'Data created successfully.',
-                'body' => UserDTO::fromCollection($data)
+                'body' => OfficeServiceCategoryDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -98,7 +94,7 @@ class UserService extends BaseService
     {
         DB::beginTransaction();
         try {
-            $this->user->delete($payload);
+            $this->officeServiceCategory->delete($payload);
             DB::commit();
             return [
                 'message' => 'Data deleted successfully.',
@@ -112,28 +108,19 @@ class UserService extends BaseService
 
     public function update($id, $payload, $relation) : array
     {
-        if (isset($payload['password'])) $payload['password'] = Hash::make($payload['password']);
-
         DB::beginTransaction();
         try {
-            $user = $this->user->find($id);
+            $officeServiceCategory = $this->officeServiceCategory->find($id);
 
-            $this->user->update($user, $payload);
+            $this->officeServiceCategory->update($officeServiceCategory, $payload);
 
-            $user->roles()->sync($payload['role_id']);
-
-            $user->refresh();
-            $data = collect([$user]);
-
-            $response = [
-                'message' => 'Data updated successfully.',
-                'body' => UserDTO::fromCollection($data),
-            ];
-
-            // event(new TestingEvent($response));
+            $data = collect([$officeServiceCategory]);
 
             DB::commit();
-            return $response;
+            return [
+                'message' => 'Data updated successfully.',
+                'body' => OfficeServiceCategoryDTO::fromCollection($data)
+            ];
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;

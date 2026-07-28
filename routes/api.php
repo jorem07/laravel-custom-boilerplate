@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 // Route::middleware('log.route')->post('/auth/login', [AuthController::class, 'login'])->name('api.login');
-Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthController::class, 'logout'])->name('api.logout');
+Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthController::class, 'register'])->name('api.register');
 
 Route::prefix('auth')->middleware(['log.route'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -19,14 +19,11 @@ Route::prefix('auth')->middleware(['log.route'])->group(function () {
 });
 
 Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
-
-    Route::match(['GET', 'POST'], '/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard.index');
 
 # DYNAMIC ROUTING PER CONTROLLER #######################################################################################
     $controller_directory = app_path('Http/Controllers');
     $controller_files = scandir($controller_directory);
-    $excluded_controllers = ['Auth','Mail', 'Dashboard', 'PDF']; // remove post name 'Controller in adding excluded controllers
+    $excluded_controllers = ['Auth','Mail', 'Dashboard']; // remove post name 'Controller in adding excluded controllers
 
     foreach ($controller_files as $controller_file) {
         if (is_file($controller_directory . '/' . $controller_file)) {
@@ -45,16 +42,7 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
                     'name' => $name
                 ];
 
-                // Determine role middleware based on controller type
-                $is_admin_only = in_array($name_case, [
-                    'User', 'Counter', 'Office', 'OfficeService', 'Role', 'Announcement', 'Display', 'QueueStatus'
-                ]);
-
-                $route_middleware = $is_admin_only 
-                    ? ['role:admin'] 
-                    : ['role:admin,officer'];
-
-                Route::middleware($route_middleware)->controller(app($controller['controller'])::class)->group(function () use ($controller, $name_case) {
+                Route::controller(app($controller['controller'])::class)->group(function () use ($controller, $name_case) {
 
                     Route::match((['GET', 'POST']), $controller['slug'], 'index')->name($controller['slug'] . '.index');
                     Route::post($controller['slug'] . '/store', 'store')->name($controller['slug'] . '.store');
@@ -101,23 +89,3 @@ Route::get('/test', function (Request $request) {
         ...$payload,
     ]);
 });
-
-// Authenticated Queue and Counter Actions
-Route::middleware(['auth:sanctum', 'log.route', 'role:admin,officer'])->group(function () {
-    Route::post('/queues/next', [\App\Http\Controllers\QueueController::class, 'next']);
-    Route::post('/queues/complete', [\App\Http\Controllers\QueueController::class, 'complete']);
-    Route::post('/queues/skip', [\App\Http\Controllers\QueueController::class, 'skip']);
-    Route::post('/queues/recall', [\App\Http\Controllers\QueueController::class, 'recall']);
-    Route::post('/queues/transfer', [\App\Http\Controllers\QueueController::class, 'transfer']);
-
-    Route::get('/counter-user-logs', [\App\Http\Controllers\CounterController::class, 'logs']);
-    Route::post('/counters/logout', [\App\Http\Controllers\CounterController::class, 'logout']);
-});
-
-// Public Queue and Counter Actions (accessible by guest kiosks and display screens)
-Route::get('/queues/current', [\App\Http\Controllers\QueueController::class, 'current']);
-Route::post('/queues/store', [\App\Http\Controllers\QueueController::class, 'store']);
-Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 'active']);
-Route::post('/counters/login', [\App\Http\Controllers\CounterController::class, 'login']);
-
-Route::match(['GET', 'POST'], '/pdf/queue', [\App\Http\Controllers\PDFController::class, 'queue']);

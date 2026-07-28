@@ -28,13 +28,8 @@ class OfficeService extends Model
      */
     protected $fillable = [
         'name',
-        'code',
-        'letter',
-        'avg_time',
-        'priority',
-        'status',
-        'color',
         'office_id',
+        'office_service_category_id'
     ];
 
     /**
@@ -67,14 +62,5 @@ class OfficeService extends Model
     {
         return $this->belongsTo(Office::class, 'office_id', 'id');
     }
-
-    public function requirements()
-    {
-        return $this->hasMany(ServiceRequirement::class, 'office_service_id', 'id')->orderBy('sort_order');
-    }
-
-    public function queues(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(Queue::class, 'office_service_id', 'id');
-    }
 }
+

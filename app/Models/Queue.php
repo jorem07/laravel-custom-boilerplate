@@ -29,13 +29,6 @@ class Queue extends Model
     protected $fillable = [
         'queue_no',
         'uuid',
-        'token',
-        'client_name',
-        'client_phone',
-        'purpose',
-        'priority',
-        'priority_type',
-        'is_favorite',
         'counter_id',
         'office_service_id',
         'user_id',
@@ -63,7 +56,7 @@ class Queue extends Model
     protected $excludedColumn = [
         'token',
         'deleted_at',
-        'created_at',
+        'created-at',
         'updated_at'
     ];
 
@@ -76,21 +69,6 @@ class Queue extends Model
     public function queue_status() : BelongsTo
     {
         return $this->belongsTo(QueueStatus::class, 'queue_status_id', 'id');
-    }
-
-    public function office_service(): BelongsTo
-    {
-        return $this->belongsTo(OfficeService::class, 'office_service_id', 'id');
-    }
-
-    public function counter(): BelongsTo
-    {
-        return $this->belongsTo(Counter::class, 'counter_id', 'id');
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }
 

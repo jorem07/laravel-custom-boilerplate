@@ -50,11 +50,11 @@ class GenerateMultipleRequest extends Command
                 $this->info("Request file {$file_path} generated.");
 
                 Bouncer::role()->firstOrCreate([
-                    'name' => 'admin',
-                    'title' => 'System Administrator',
+                    'name' => 'super-admin',
+                    'title' => 'Super Administrator',
                 ]);
 
-                Bouncer::allow('admin')->everything();
+                Bouncer::allow('super-admin')->everything();
 
                 Bouncer::ability()->firstOrCreate([
                     'name' => $ability,

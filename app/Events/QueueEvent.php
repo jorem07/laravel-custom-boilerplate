@@ -4,6 +4,8 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -12,22 +14,23 @@ class QueueEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(
-        public array $payload,
-    ) {}
-
-    public function broadcastOn(): Channel
+    /**
+     * Create a new event instance.
+     */
+    public function __construct()
     {
-        return new Channel('queue-channel');
+        //
     }
 
-    public function broadcastAs(): string
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return array<int, \Illuminate\Broadcasting\Channel>
+     */
+    public function broadcastOn(): array
     {
-        return 'queue.updated';
-    }
-
-    public function broadcastWith(): array
-    {
-        return $this->payload;
+        return [
+            new PrivateChannel('channel-name'),
+        ];
     }
 }

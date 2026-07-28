@@ -16,12 +16,9 @@ class AuthService
     {
         try {
 
-            $email = is_array($request) ? ($request['email'] ?? '') : $request->input('email');
-            $password = is_array($request) ? ($request['password'] ?? '') : $request->input('password');
-            $ip = is_array($request) ? '127.0.0.1' : $request->ip();
-
-            $key = $email . '|' . $ip;
-            if (RateLimiter::tooManyAttempts($key, 10)) {
+            // Checking for attempts
+            $key = $request['email'] . '|' . $request['ip'];
+            if (RateLimiter::tooManyAttempts($key, 5)) {
                 $seconds = RateLimiter::availableIn($key);
                 return [
                     'message' => 'Too many attempts. Try again in ' . ceil($seconds / 60) . ' minutes.',
@@ -29,21 +26,16 @@ class AuthService
                 ];
             }
 
-            $user = User::where('email', $email)->first();
+            if (Auth::attempt($request->only('email', 'password'))) {
 
-            if ($user) {
-                if (strtolower($user->status) === 'inactive' || !$user->allow_login) {
-                    return [
-                        'message' => 'Your account is deactivated by the admin.',
-                        'errors' => 'AccountDeactivated'
-                    ];
-                }
+                // Clear attempts after successful login
+                RateLimiter::clear($key);
 
-                if (Hash::check($password, $user->password)) {
-                    RateLimiter::clear($key);
+                $user = Auth::user();
 
-                    $user_agent = is_array($request) ? 'CLI' : $request->header('User-Agent');
-                    $ip_address = is_array($request) ? '127.0.0.1' : $request->ip();
+                if ($user->status && $user->allow_login) {
+                    $user_agent = $request->header('User-Agent');
+                    $ip_address = $request->ip();
 
                     $token = $user->createToken('auth-token');
 
@@ -59,6 +51,11 @@ class AuthService
                         'token' => $token->plainTextToken,
                     ];
                 }
+
+                return [
+                    'message' => 'Please verify your account first.',
+                    'errors' => 'Error'
+                ];
             }
 
             # here is the failed attempt lockout 
@@ -107,7 +104,7 @@ class AuthService
     {
         // TODO: User register with Email OTP
         $payload['password'] = Hash::make($payload['password']);
-        $payload['status'] = 'Inactive';
+        $payload['status'] = false;
         $payload['allow_login'] = false;
         
         $data = User::create($payload);

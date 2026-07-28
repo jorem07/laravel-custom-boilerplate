@@ -25,8 +25,8 @@ class OfficeServiceDTO
         unset($data['deleted_at']);
 
         return array_merge($data, [
-            'office_id'    => $this->office?->id,
-            'offices_name' => $this->office?->name,
+            'office_id'   => $this->office->id,
+            'offices_name' => $this->office->name
         ]);
     }
 

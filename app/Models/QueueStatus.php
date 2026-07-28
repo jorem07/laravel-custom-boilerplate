@@ -52,10 +52,5 @@ class QueueStatus extends Model
     {
         return $this->excludedColumn;
     }
-
-    public function queues(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(Queue::class, 'queue_status_id', 'id');
-    }
 }
 

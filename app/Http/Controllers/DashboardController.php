@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -13,11 +14,10 @@ class DashboardController extends Controller
     {
         $this->dashboardService = $dashboardService;
     }
-
-    public function index(): JsonResponse
+    public function getTotalData() : JsonResponse
     {
-        $data = $this->dashboardService->getDashboardMetrics();
 
-        return $this->getJsonResponse($data);
+        $data = $this->dashboardService->getTotalData();
+        return response()->json(compact('data'));
     }
 }

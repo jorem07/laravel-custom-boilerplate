@@ -30,38 +30,37 @@ class GenerateAbilities extends Command
      */
     public function handle()
     {
-        $admin = Bouncer::role()->firstOrCreate([
-            'name' => 'admin',
-            'title' => 'System Administrator',
+        $super_admin = Bouncer::role()->firstOrCreate([
+            'name' => 'super-admin',
+            'title' => 'Super Administrator',
         ]);
 
-        $admin->wasRecentlyCreated? $this->info('Role admin created.') : $this->error('Role admin existed. Skipped.');
+        $super_admin->wasRecentlyCreated? $this->info('Role super-admin created.') : $this->error('Role super-admin existed. Skipped.');
 
-        Bouncer::allow('admin')->everything();
+        Bouncer::allow('super-admin')->everything();
 
         # Added for view temp first
         Permission::updateOrCreate([
             'ability_id' => 1,
-            'entity_id' => $admin->id,
+            'entity_id' => $super_admin->id,
             'entity_type' => 'App\Models\Role'
         ]);
 
-        $email = env('FIRST_USER_EMAIL', 'admin@example.com');
         User::updateOrCreate([
-            'email' => $email
+            'email' =>env('FIRST_USER_EMAIL')
         ], [
-            'fullname' => (env('FIRST_USER_FIRST_NAME') || env('FIRST_USER_LAST_NAME'))
-                ? trim(env('FIRST_USER_FIRST_NAME', '') . ' ' . env('FIRST_USER_MIDDLE_NAME', '') . ' ' . env('FIRST_USER_LAST_NAME', ''))
-                : 'System Admin',
-            'email' => $email,
+            'first_name' => env('FIRST_USER_FIRST_NAME'),
+            'middle_name' => env('FIRST_USER_MIDDLE_NAME'),
+            'last_name' => env('FIRST_USER_LAST_NAME'),
+            'email' =>env('FIRST_USER_EMAIL'),
             'email_verified_at' => now(),
             'remember_token' => Str::random(99),
-            'password' => Hash::make(env('FIRST_USER_PASSWORD', 'password')),
-            'status' => 'Active',
+            'password' => Hash::make(env('FIRST_USER_PASSWORD')),
+            'status' => true,
             'allow_login' => true
         ]);
 
-        Bouncer::assign('admin')->to(User::where('email', $email)->first());
+        Bouncer::assign('super-admin')->to(User::where('email', env('FIRST_USER_EMAIL'))->first());
 
         $methods = ['Index','Store','Show','Edit','Update','Destroy','ForceDelete'];
         $controllerDirectory = app_path('Http/Controllers');
