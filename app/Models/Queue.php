@@ -34,7 +34,15 @@ class Queue extends Model
         'user_id',
         'queue_status_id',
         'time_start',
-        'time_end'
+        'time_end',
+        'estimated_wait_minutes',
+        'estimated_time_return',
+    ];
+
+    protected $casts = [
+        'time_start' => 'datetime',
+        'time_end' => 'datetime',
+        'estimated_time_return' => 'datetime',
     ];
 
     /**
@@ -69,6 +77,16 @@ class Queue extends Model
     public function queue_status() : BelongsTo
     {
         return $this->belongsTo(QueueStatus::class, 'queue_status_id', 'id');
+    }
+
+    public function counter(): BelongsTo
+    {
+        return $this->belongsTo(Counter::class, 'counter_id', 'id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }
 

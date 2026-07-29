@@ -5,12 +5,17 @@ namespace App\Traits;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 trait PayloadTrait
 {
+    private array $validateGlobal;
+    
     public function payloadTaits() : array
     {
-        return [
+        $this->validateGlobal= [
             'search'         => 'nullable|array',
             'full_search'    => 'nullable',
             'page'           => 'nullable|numeric',
@@ -19,6 +24,28 @@ trait PayloadTrait
             'sort.column'    => 'required_with:sort|string',
             'sort.order'     => 'required_with:sort|string|in:asc,desc',
         ];
+
+        self::entityChecker();
+        
+        return $this->validateGlobal;
+    }
+
+    private function entityChecker()
+    {
+        $class = class_basename($this);
+        if ($class !== 'Store'  && $class !== 'Index') {
+            $table = $this->getTargetTable();
+
+            $rule = Rule::exists($table)->when(Schema::hasColumn($table, 'deleted_at'), fn($q) => $q->whereNull('deleted_at'));
+
+            $this->validateGlobal['id'] = ['required', $rule];
+        }
+    }
+
+    private function getTargetTable()
+    {
+        $namespace = (new \ReflectionClass($this))->getNamespaceName();
+        return Str::plural(Str::snake(substr($namespace, strrpos($namespace, '\\') + 1)));
     }
 
     /**
@@ -44,6 +71,7 @@ trait PayloadTrait
     public function prepareForValidation() : void
     {
         $this->merge([
+            'id'   => $this->route($this->getTargetTable()),
             'sort' => $this->input('sort', [
                 'column' => 'updated_at',
                 'order'  => 'desc',

@@ -33,7 +33,7 @@ class CounterUserLogDTO
     {
         $userName = null;
         if ($log->relationLoaded('user') && $log->user) {
-            $userName = $log->user->fullname;
+            $userName = trim("{$log->user->first_name} {$log->user->last_name}");
         }
 
         return new self(

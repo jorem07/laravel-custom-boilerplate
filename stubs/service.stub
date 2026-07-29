@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Services;
+
+use App\Repositories\Contracts\{{ class }}RepositoryInterface;
+use Illuminate\Support\Facades\DB;
+use App\Traits\ServiceTrait;
+
+class {{ class }}Service extends BaseService
+{
+    use ServiceTrait;
+
+    protected {{ class }}RepositoryInterface $repository;
+
+    public function __construct({{ class }}RepositoryInterface $repository)
+    {
+        $this->repository = $repository;
+    }
+
+    // You can override or add methods here to customize service
+}

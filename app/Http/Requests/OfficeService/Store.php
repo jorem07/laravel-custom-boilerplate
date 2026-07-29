@@ -44,20 +44,6 @@ class Store extends FormRequest
             'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL'
         ];
 
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:office_services,id'];
-        }
-        
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('office_services')
-        ]);
     }
 }

@@ -23,9 +23,4 @@ class Login extends FormRequest
             'user_id' => 'required|exists:users,id,deleted_at,NULL',
         ];
     }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-    }
 }

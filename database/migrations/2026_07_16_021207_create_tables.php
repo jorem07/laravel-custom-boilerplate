@@ -71,7 +71,7 @@ return new class extends Migration
 
         Schema::create('queues', function (Blueprint $table) {
             $table->id();
-            $table->string('queue_no')->unique();
+            $table->string('queue_no');
             $table->unsignedBigInteger('queue_status_id');
             $table->unsignedBigInteger('office_service_id')->nullable();
             $table->unsignedBigInteger('counter_id')->nullable();
