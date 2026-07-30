@@ -1,0 +1,1714 @@
+openapi: 3.1.0
+info:
+  title: Camiguin Queueing API
+  description: |
+    REST API for the Camiguin government queueing system.
+
+    - Authentication via Laravel Sanctum Bearer tokens
+    - Authorization via Silber Bouncer permissions
+    - Real-time updates on `queue-channel` / `queue.updated`
+
+    Synchronized from repository on 2026-07-30.
+  version: 1.0.0
+  contact:
+    name: Infosoft
+
+servers:
+  - url: http://localhost/api
+    description: Local development
+  - url: "{baseUrl}/api"
+    description: Custom deployment
+    variables:
+      baseUrl:
+        default: http://localhost
+
+tags:
+  - name: Authentication
+    description: Login, logout, password reset, email verification
+  - name: Offices
+  - name: Office Service Categories
+  - name: Office Services
+  - name: Queue Statuses
+  - name: Queues
+    description: Queue tickets and queue operations
+  - name: Counters
+    description: Service counters and staff assignment
+  - name: Users
+  - name: Roles
+  - name: Displays
+  - name: Announcements
+  - name: Announcement Statuses
+  - name: PDF
+    description: Queue receipt generation
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                logout:
+                  type: string
+                  enum: [others, all]
+                  description: Revoke other sessions, all sessions, or current only when omitted
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Reset link sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /reset-password/{token}:
+    get:
+      tags: [Authentication]
+      summary: Get password reset token (placeholder)
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /email/verify/{id}/{hash}:
+    get:
+      tags: [Authentication]
+      summary: Verify email address
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /offices:
+    get:
+      tags: [Offices]
+      summary: List offices
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+        - $ref: "#/components/parameters/sortColumn"
+        - $ref: "#/components/parameters/sortOrder"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+    post:
+      tags: [Offices]
+      summary: List offices (POST)
+      requestBody:
+        $ref: "#/components/requestBodies/ListRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /offices/store:
+    post:
+      tags: [Offices]
+      summary: Create office
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /offices/show/{offices}:
+    get:
+      tags: [Offices]
+      summary: Show office
+      parameters:
+        - $ref: "#/components/parameters/officesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+    post:
+      tags: [Offices]
+      summary: Show office (POST)
+      parameters:
+        - $ref: "#/components/parameters/officesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /offices/{offices}:
+    put:
+      tags: [Offices]
+      summary: Update office
+      parameters:
+        - $ref: "#/components/parameters/officesId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+    patch:
+      tags: [Offices]
+      summary: Partially update office
+      parameters:
+        - $ref: "#/components/parameters/officesId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /offices/delete/{offices}:
+    delete:
+      tags: [Offices]
+      summary: Delete office
+      parameters:
+        - $ref: "#/components/parameters/officesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /office-service-categories:
+    get:
+      tags: [Office Service Categories]
+      summary: List office service categories
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+    post:
+      tags: [Office Service Categories]
+      summary: List office service categories (POST)
+      requestBody:
+        $ref: "#/components/requestBodies/ListRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /office-service-categories/store:
+    post:
+      tags: [Office Service Categories]
+      summary: Create office service category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeServiceCategoryStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /office-service-categories/show/{office_service_categories}:
+    get:
+      tags: [Office Service Categories]
+      summary: Show office service category
+      parameters:
+        - $ref: "#/components/parameters/officeServiceCategoriesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /office-service-categories/{office_service_categories}:
+    put:
+      tags: [Office Service Categories]
+      summary: Update office service category
+      parameters:
+        - $ref: "#/components/parameters/officeServiceCategoriesId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeServiceCategoryStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /office-service-categories/delete/{office_service_categories}:
+    delete:
+      tags: [Office Service Categories]
+      summary: Delete office service category
+      parameters:
+        - $ref: "#/components/parameters/officeServiceCategoriesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /office-services:
+    get:
+      tags: [Office Services]
+      summary: List office services
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+    post:
+      tags: [Office Services]
+      summary: List office services (POST)
+      requestBody:
+        $ref: "#/components/requestBodies/ListRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /office-services/store:
+    post:
+      tags: [Office Services]
+      summary: Create office service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeServiceStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /office-services/show/{office_services}:
+    get:
+      tags: [Office Services]
+      summary: Show office service
+      parameters:
+        - $ref: "#/components/parameters/officeServicesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /office-services/{office_services}:
+    put:
+      tags: [Office Services]
+      summary: Update office service
+      parameters:
+        - $ref: "#/components/parameters/officeServicesId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficeServiceStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /office-services/delete/{office_services}:
+    delete:
+      tags: [Office Services]
+      summary: Delete office service
+      parameters:
+        - $ref: "#/components/parameters/officeServicesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /queue-statuses:
+    get:
+      tags: [Queue Statuses]
+      summary: List queue statuses
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /queue-statuses/store:
+    post:
+      tags: [Queue Statuses]
+      summary: Create queue status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamedEntityStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /queue-statuses/show/{queue_statuses}:
+    get:
+      tags: [Queue Statuses]
+      summary: Show queue status
+      parameters:
+        - $ref: "#/components/parameters/queueStatusesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /queue-statuses/{queue_statuses}:
+    put:
+      tags: [Queue Statuses]
+      summary: Update queue status
+      parameters:
+        - $ref: "#/components/parameters/queueStatusesId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamedEntityStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /queue-statuses/delete/{queue_statuses}:
+    delete:
+      tags: [Queue Statuses]
+      summary: Delete queue status
+      parameters:
+        - $ref: "#/components/parameters/queueStatusesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /queues:
+    get:
+      tags: [Queues]
+      summary: List queues (authenticated)
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+    post:
+      tags: [Queues]
+      summary: List queues (POST, authenticated)
+      requestBody:
+        $ref: "#/components/requestBodies/ListRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /queues/store:
+    post:
+      tags: [Queues]
+      summary: Create queue ticket (public)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueuePublicStore"
+      responses:
+        "200":
+          description: Queue created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Queue"
+
+  /queues/show/{queues}:
+    get:
+      tags: [Queues]
+      summary: Show queue by UUID (public)
+      security: []
+      parameters:
+        - name: queues
+          in: path
+          required: true
+          description: Queue UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /queues/{queues}:
+    put:
+      tags: [Queues]
+      summary: Update queue (authenticated)
+      parameters:
+        - $ref: "#/components/parameters/queuesId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /queues/delete/{queues}:
+    delete:
+      tags: [Queues]
+      summary: Delete queue (authenticated)
+      parameters:
+        - $ref: "#/components/parameters/queuesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /queues/current:
+    get:
+      tags: [Queues]
+      summary: Current active queues for today
+      responses:
+        "200":
+          description: Active queue snapshot
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Queue"
+                      others:
+                        $ref: "#/components/schemas/QueueSnapshotOthers"
+
+  /queues/next:
+    post:
+      tags: [Queues]
+      summary: Call next waiting queue to a counter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueNext"
+      responses:
+        "200":
+          description: Next queue called or no queue available
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Queue"
+                      others:
+                        $ref: "#/components/schemas/QueueNextOthers"
+
+  /counters:
+    get:
+      tags: [Counters]
+      summary: List counters
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /counters/store:
+    post:
+      tags: [Counters]
+      summary: Create counter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterStore"
+      responses:
+        "200":
+          description: Counter created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Counter"
+
+  /counters/show/{counters}:
+    get:
+      tags: [Counters]
+      summary: Show counter
+      parameters:
+        - $ref: "#/components/parameters/countersId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /counters/{counters}:
+    put:
+      tags: [Counters]
+      summary: Update counter
+      parameters:
+        - $ref: "#/components/parameters/countersId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /counters/delete/{counters}:
+    delete:
+      tags: [Counters]
+      summary: Delete counter
+      parameters:
+        - $ref: "#/components/parameters/countersId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /counters/active:
+    get:
+      tags: [Counters]
+      summary: List all counters with login state
+      responses:
+        "200":
+          description: Active counters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Counter"
+
+  /counters/login:
+    post:
+      tags: [Counters]
+      summary: Log user into counter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterLogin"
+      responses:
+        "200":
+          description: User logged in
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      others:
+                        type: object
+                        properties:
+                          log:
+                            $ref: "#/components/schemas/CounterUserLog"
+
+  /counters/logout:
+    post:
+      tags: [Counters]
+      summary: Log user out of counter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [counter_id]
+              properties:
+                counter_id:
+                  type: integer
+      responses:
+        "200":
+          description: User logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardEnvelope"
+
+  /counters/performance:
+    get:
+      tags: [Counters]
+      summary: Top counter performance metrics for today
+      parameters:
+        - name: office_service_id
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+      responses:
+        "200":
+          description: Performance rankings
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CounterPerformance"
+
+  /counter-user-logs:
+    get:
+      tags: [Counters]
+      summary: Today's counter login logs
+      responses:
+        "200":
+          description: Counter user logs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardEnvelope"
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CounterUserLog"
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /users/store:
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /users/show/{users}:
+    get:
+      tags: [Users]
+      summary: Show user
+      parameters:
+        - $ref: "#/components/parameters/usersId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /users/{users}:
+    put:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - $ref: "#/components/parameters/usersId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /users/delete/{users}:
+    delete:
+      tags: [Users]
+      summary: Delete user
+      parameters:
+        - $ref: "#/components/parameters/usersId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /roles:
+    get:
+      tags: [Roles]
+      summary: List roles
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /roles/store:
+    post:
+      tags: [Roles]
+      summary: Create role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamedEntityStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /roles/show/{roles}:
+    get:
+      tags: [Roles]
+      summary: Show role
+      parameters:
+        - $ref: "#/components/parameters/rolesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /roles/{roles}:
+    put:
+      tags: [Roles]
+      summary: Update role
+      parameters:
+        - $ref: "#/components/parameters/rolesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /roles/delete/{roles}:
+    delete:
+      tags: [Roles]
+      summary: Delete role
+      parameters:
+        - $ref: "#/components/parameters/rolesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /displays:
+    get:
+      tags: [Displays]
+      summary: List displays
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /displays/store:
+    post:
+      tags: [Displays]
+      summary: Create display
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisplayStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /displays/show/{displays}:
+    get:
+      tags: [Displays]
+      summary: Show display
+      parameters:
+        - $ref: "#/components/parameters/displaysId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /displays/{displays}:
+    put:
+      tags: [Displays]
+      summary: Update display
+      parameters:
+        - $ref: "#/components/parameters/displaysId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisplayStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /displays/delete/{displays}:
+    delete:
+      tags: [Displays]
+      summary: Delete display
+      parameters:
+        - $ref: "#/components/parameters/displaysId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /announcements:
+    get:
+      tags: [Announcements]
+      summary: List announcements
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /announcements/store:
+    post:
+      tags: [Announcements]
+      summary: Create announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /announcements/show/{announcements}:
+    get:
+      tags: [Announcements]
+      summary: Show announcement
+      parameters:
+        - $ref: "#/components/parameters/announcementsId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /announcements/{announcements}:
+    put:
+      tags: [Announcements]
+      summary: Update announcement
+      parameters:
+        - $ref: "#/components/parameters/announcementsId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /announcements/delete/{announcements}:
+    delete:
+      tags: [Announcements]
+      summary: Delete announcement
+      parameters:
+        - $ref: "#/components/parameters/announcementsId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /announcement-statuses:
+    get:
+      tags: [Announcement Statuses]
+      summary: List announcement statuses
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/show"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardListResponse"
+
+  /announcement-statuses/store:
+    post:
+      tags: [Announcement Statuses]
+      summary: Create announcement status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamedEntityStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /announcement-statuses/show/{announcement_statuses}:
+    get:
+      tags: [Announcement Statuses]
+      summary: Show announcement status
+      parameters:
+        - $ref: "#/components/parameters/announcementStatusesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /announcement-statuses/{announcement_statuses}:
+    put:
+      tags: [Announcement Statuses]
+      summary: Update announcement status
+      parameters:
+        - $ref: "#/components/parameters/announcementStatusesId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamedEntityStore"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardItemResponse"
+
+  /announcement-statuses/delete/{announcement_statuses}:
+    delete:
+      tags: [Announcement Statuses]
+      summary: Delete announcement status
+      parameters:
+        - $ref: "#/components/parameters/announcementStatusesId"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardDeleteResponse"
+
+  /pdf/queue:
+    get:
+      tags: [PDF]
+      summary: Generate queue receipt PDF (inline)
+      security: []
+      parameters:
+        - name: uuid
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: disposition
+          in: query
+          schema:
+            type: string
+            enum: [inline, download]
+            default: inline
+      responses:
+        "200":
+          description: PDF document
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    post:
+      tags: [PDF]
+      summary: Generate queue receipt PDF
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [uuid]
+              properties:
+                uuid:
+                  type: string
+                  format: uuid
+                disposition:
+                  type: string
+                  enum: [inline, download]
+                  default: inline
+      responses:
+        "200":
+          description: PDF document
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Laravel Sanctum personal access token
+
+  parameters:
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    show:
+      name: show
+      in: query
+      description: Page size
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+    sortColumn:
+      name: sort[column]
+      in: query
+      schema:
+        type: string
+        default: updated_at
+    sortOrder:
+      name: sort[order]
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+    officesId:
+      name: offices
+      in: path
+      required: true
+      schema:
+        type: integer
+    officeServiceCategoriesId:
+      name: office_service_categories
+      in: path
+      required: true
+      schema:
+        type: integer
+    officeServicesId:
+      name: office_services
+      in: path
+      required: true
+      schema:
+        type: integer
+    queueStatusesId:
+      name: queue_statuses
+      in: path
+      required: true
+      schema:
+        type: integer
+    queuesId:
+      name: queues
+      in: path
+      required: true
+      schema:
+        type: integer
+    countersId:
+      name: counters
+      in: path
+      required: true
+      schema:
+        type: integer
+    usersId:
+      name: users
+      in: path
+      required: true
+      schema:
+        type: integer
+    rolesId:
+      name: roles
+      in: path
+      required: true
+      schema:
+        type: integer
+    displaysId:
+      name: displays
+      in: path
+      required: true
+      schema:
+        type: integer
+    announcementsId:
+      name: announcements
+      in: path
+      required: true
+      schema:
+        type: integer
+    announcementStatusesId:
+      name: announcement_statuses
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  requestBodies:
+    ListRequest:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ListParams"
+
+  responses:
+    StandardListResponse:
+      description: Paginated list
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StandardEnvelope"
+    StandardItemResponse:
+      description: Single item
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StandardEnvelope"
+    StandardDeleteResponse:
+      description: Deleted
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardEnvelope"
+              - type: object
+                properties:
+                  body:
+                    nullable: true
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationError"
+
+  schemas:
+    ListParams:
+      type: object
+      properties:
+        page:
+          type: integer
+        show:
+          type: integer
+        full_search:
+          type: string
+        search:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+        sort:
+          type: object
+          properties:
+            column:
+              type: string
+            order:
+              type: string
+              enum: [asc, desc]
+
+    StandardEnvelope:
+      type: object
+      properties:
+        message:
+          type: string
+        error:
+          nullable: true
+        details:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            from:
+              type: integer
+            to:
+              type: integer
+            last_page:
+              type: integer
+            skip:
+              type: integer
+            take:
+              type: integer
+            total:
+              type: integer
+        headers:
+          nullable: true
+        body:
+          oneOf:
+            - type: array
+              items:
+                type: object
+            - type: object
+            - type: "null"
+        searchable:
+          type: array
+          items:
+            type: string
+        others:
+          nullable: true
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          type: object
+        token:
+          type: string
+
+    NamedEntityStore:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    OfficeStore:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    OfficeServiceCategoryStore:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          description: Category type; also used as queue number prefix
+
+    OfficeServiceStore:
+      type: object
+      required: [name, office_id, office_service_category_id]
+      properties:
+        name:
+          type: string
+        office_id:
+          type: integer
+        office_service_category_id:
+          type: integer
+
+    QueuePublicStore:
+      type: object
+      required: [queue_status_id, office_service_id]
+      properties:
+        queue_status_id:
+          type: integer
+        office_service_id:
+          type: integer
+      description: uuid and time_start are assigned server-side
+
+    QueueUpdate:
+      type: object
+      required: [queue_status_id, counter_id, user_id]
+      properties:
+        queue_status_id:
+          type: integer
+        counter_id:
+          type: integer
+        user_id:
+          type: integer
+
+    QueueNext:
+      type: object
+      required: [counter_id]
+      properties:
+        counter_id:
+          type: integer
+        user_id:
+          type: integer
+          description: Must match logged-in counter user when provided
+
+    Queue:
+      type: object
+      properties:
+        id:
+          type: integer
+        queue_no:
+          type: string
+          example: BP-001
+        uuid:
+          type: string
+          format: uuid
+        queue_status_id:
+          type: integer
+        office_service_id:
+          type: integer
+        counter_id:
+          type: integer
+          nullable: true
+        user_id:
+          type: integer
+          nullable: true
+        time_start:
+          type: string
+          format: date-time
+        time_end:
+          type: string
+          format: date-time
+          nullable: true
+        estimated_wait_minutes:
+          type: integer
+          nullable: true
+        estimated_time_return:
+          type: string
+          format: date-time
+          nullable: true
+        queue_status:
+          type: object
+        counter:
+          type: object
+        user:
+          type: object
+
+    CounterStore:
+      type: object
+      required: [name, office_service_id]
+      properties:
+        name:
+          type: string
+        office_service_id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+
+    CounterUpdate:
+      type: object
+      required: [name, office_service_id]
+      properties:
+        name:
+          type: string
+        office_service_id:
+          type: integer
+
+    CounterLogin:
+      type: object
+      required: [counter_id, user_id]
+      properties:
+        counter_id:
+          type: integer
+        user_id:
+          type: integer
+
+    Counter:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        user_id:
+          type: integer
+          nullable: true
+        office_service_id:
+          type: integer
+          nullable: true
+        user_name:
+          type: string
+          nullable: true
+        office_service_name:
+          type: string
+          nullable: true
+        is_logged_in:
+          type: boolean
+
+    CounterUserLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        counter_id:
+          type: integer
+        log_in:
+          type: string
+          format: date-time
+        log_out:
+          type: string
+          format: date-time
+          nullable: true
+        user_name:
+          type: string
+        counter_name:
+          type: string
+
+    CounterPerformance:
+      type: object
+      properties:
+        counter_id:
+          type: integer
+        counter_name:
+          type: string
+        served:
+          type: integer
+        avg_time_minutes:
+          type: number
+        avg_time_label:
+          type: string
+        efficiency_percent:
+          type: number
+
+    QueueSnapshotOthers:
+      type: object
+      properties:
+        counters:
+          type: array
+          items:
+            $ref: "#/components/schemas/Counter"
+        counter_logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/CounterUserLog"
+        counter_performances:
+          type: array
+          items:
+            $ref: "#/components/schemas/CounterPerformance"
+
+    QueueNextOthers:
+      allOf:
+        - $ref: "#/components/schemas/QueueSnapshotOthers"
+        - type: object
+          properties:
+            called:
+              $ref: "#/components/schemas/Queue"
+
+    UserStore:
+      type: object
+      required:
+        - first_name
+        - middle_name
+        - last_name
+        - email
+        - password
+        - password_confirmation
+        - allow_login
+        - status
+        - role_id
+      properties:
+        first_name:
+          type: string
+        middle_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        password_confirmation:
+          type: string
+          format: password
+        allow_login:
+          type: boolean
+        status:
+          type: boolean
+        role_id:
+          type: array
+          items:
+            type: integer
+
+    UserUpdate:
+      allOf:
+        - $ref: "#/components/schemas/UserStore"
+        - type: object
+          properties:
+            current_password:
+              type: string
+            new_password:
+              type: string
+
+    DisplayStore:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        connection_status:
+          type: string
+        office_id:
+          type: integer
+
+    AnnouncementStore:
+      type: object
+      required:
+        - title
+        - description
+        - publish_date
+        - publish_time
+        - created_by
+        - announcement_status_id
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        publish_date:
+          type: string
+          format: date
+        publish_time:
+          type: string
+        expire_date:
+          type: string
+          format: date
+        expire_time:
+          type: string
+        created_by:
+          type: integer
+        office_id:
+          type: integer
+        announcement_status_id:
+          type: integer
+
+    AnnouncementUpdate:
+      type: object
+      required:
+        - title
+        - description
+        - publish_date
+        - publish_time
+        - announcement_status_id
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        publish_date:
+          type: string
+          format: date
+        publish_time:
+          type: string
+        expire_date:
+          type: string
+          format: date
+        expire_time:
+          type: string
+        announcement_status_id:
+          type: integer
