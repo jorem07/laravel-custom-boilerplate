@@ -13,9 +13,9 @@ Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthCont
 
 Route::prefix('auth')->middleware(['log.route'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('register/resend', [AuthController::class, 'resend']);
-    Route::post('register/verify-otp', [AuthController::class, 'verifyOtp']);
+    // Route::post('register', [AuthController::class, 'register']);
+    // Route::post('register/resend', [AuthController::class, 'resend']);
+    // Route::post('register/verify-otp', [AuthController::class, 'verifyOtp']);
 });
 
 Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
@@ -84,20 +84,6 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     $request->fulfill();
     return response()->json(['message' => 'Email verified successfully.']);
 })->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
-
-Route::get('/test', function (Request $request) {
-    $payload = [
-        'message' => $request->input('message', 'Manual test broadcast'),
-        'body' => $request->input('body'),
-    ];
-
-    event(new TestingEvent($payload));
-
-    return response()->json([
-        'status' => 'Event sent',
-        ...$payload,
-    ]);
-});
 
 Route::match(['GET', 'POST'], '/pdf/queue', [\App\Http\Controllers\PDFController::class, 'queue']);
 Route::post('/queues/store', [\App\Http\Controllers\QueueController::class, 'store']);
