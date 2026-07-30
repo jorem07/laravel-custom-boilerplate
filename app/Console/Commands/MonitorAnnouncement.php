@@ -8,6 +8,7 @@ use App\Models\Announcement;
 use App\Models\AnnouncementStatus;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MonitorAnnouncement extends Command
 {
@@ -42,9 +43,9 @@ class MonitorAnnouncement extends Command
                 $q->whereNot('name', 'Expired');
             });
 
-            $expire_affected = $expire->update([
+            $expire_affected = $expire->exists() ? $expire->update([
                 'announcement_status_id' => $statuses->firstWhere('name', 'Expired')->id,
-            ]);
+            ]) : 0;
 
             if ($expire_affected > 0) {
                 $published = Announcement::with(['status:id,name', 'office:id,name'])
@@ -64,9 +65,9 @@ class MonitorAnnouncement extends Command
                 $q->where('name', 'Scheduled');
             });
 
-            $publish_affected = $publish->update([
+            $publish_affected = $publish->exists() ? $publish->update([
                 'announcement_status_id' => $statuses->firstWhere('name', 'Published')->id,
-            ]);
+            ]) : 0;
 
             if ($publish_affected > 0) {
                 $published = Announcement::with(['status:id,name', 'office:id,name'])
