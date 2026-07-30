@@ -8,10 +8,25 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Silber\Bouncer\BouncerFacade;
 
 trait PayloadTrait
 {
     private array $validateGlobal;
+
+    /**
+     * Determine if the user is authorized to make this request.
+     * Override this method to implement custom authorization logic.
+     *
+     * @return bool
+     */
+    public function authorize(): bool
+    {
+        return BouncerFacade::can(implode('.', array_filter([
+            $this->getTargetTable(),
+            class_basename($this)
+        ])));
+    }
     
     public function payloadTaits() : array
     {

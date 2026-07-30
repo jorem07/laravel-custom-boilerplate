@@ -3,9 +3,9 @@
 namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Bouncer;
 use App\Traits\PayloadTrait;
 use Illuminate\Validation\Rule;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 
 /**
  * Store
@@ -17,17 +17,6 @@ class Store extends FormRequest
 {
     use PayloadTrait {
         PayloadTrait::prepareForValidation as payloadPrepareForValidation;
-    }
-
-    /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
     }
 
     /**
