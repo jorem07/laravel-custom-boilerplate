@@ -16,25 +16,44 @@ class Update extends FormRequest
         return true;
     }
 
-    public function rules(): array
+     public function rules(): array
     {
-        return array_merge($this->payloadTaits(), [
-            'id' => ['required', 'exists:announcements,id'],
-            'title' => 'sometimes|required|string',
-            'status' => 'nullable|string',
-            'type' => 'nullable|string',
-            'icon' => 'nullable|string',
-            'icon_color' => 'nullable|string',
-            'icon_bg_color' => 'nullable|string',
-            'scheduled_at' => 'nullable|date',
-            'expires_at' => 'nullable|date',
-            'created_by' => 'nullable|exists:users,id',
-        ]);
+        $validate = [
+            'title'                  => 'required',
+            'description'            => 'required',
+
+            'publish_date'           => 'required|date_format:Y-m-d',
+            'publish_time'           => 'required|date_format:H:i,h:i A,h:i a,g:i A,g:i a',
+            'publish_schedule'       => 'required|date',
+         
+            'expire_date'            => 'nullable|date_format:Y-m-d',
+            'expire_time'            => 'nullable|date_format:H:i,h:i A,h:i a,g:i A,g:i a',
+            'expire_schedule'        => 'nullable|date',
+
+            'announcement_status_id' => 'required|int|exists:announcement_statuses,id,deleted_at,NULL'
+        ];
+
+        return array_merge($this->payloadTaits(), $validate);
     }
 
     public function prepareForValidation(): void
     {
         $this->payloadPrepareForValidation();
-        $this->merge(['id' => $this->route('announcements')]);
+
+        $merge = [
+            'publish_schedule' => trim(implode(' ', array_filter([
+                $this->publish_date,
+                $this->publish_time,
+            ])))
+        ];
+
+        if ($this->expire_date || $this->expire_time) {
+            $merge['expire_schedule'] = trim(implode(' ', array_filter([
+                $this->expire_date,
+                $this->expire_time,
+            ])));
+        }
+        
+        $this->merge($merge);
     }
 }

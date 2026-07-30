@@ -17,7 +17,9 @@ class AnnouncementController extends Controller
     protected array $searchable = [];
 
     protected array $relation = [
-        'created_by_user' => ['id', 'fullname'],
+        'created_by_user' => ['id', 'first_name', 'middle_name', 'last_name'],
+        'office'          => ['id', 'name'],
+        'status'          => ['id', 'name']
     ];
 
     public function __construct(AnnouncementService $announcementService)

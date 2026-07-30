@@ -14,7 +14,8 @@ class Announcement extends Model
 
     protected $fillable = [
         'title',
-        'status',
+        'description',
+        'announcement_status_id',
         'type',
         'icon',
         'icon_color',
@@ -22,23 +23,13 @@ class Announcement extends Model
         'scheduled_at',
         'expires_at',
         'created_by',
+        'publish_schedule',
+        'expire_schedule'
     ];
 
     protected $excludedColumn = [
         'deleted_at',
     ];
-
-
-
-    public function getExcludedColumn(): array
-    {
-        return $this->excludedColumn;
-    }
-
-    public function created_by_user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by', 'id');
-    }
 
     /**
      * Get the attributes that should be cast.
@@ -51,5 +42,25 @@ class Announcement extends Model
             'scheduled_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
+    }
+
+    public function getExcludedColumn(): array
+    {
+        return $this->excludedColumn;
+    }
+
+    public function created_by_user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
+    public function office() : BelongsTo
+    {
+        return $this->belongsTo(Office::class, 'office_id', 'id');
+    }
+
+    public function status() : BelongsTo
+    {
+        return $this->belongsTo(AnnouncementStatus::class, 'announcement_status_id', 'id');
     }
 }

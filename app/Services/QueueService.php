@@ -237,6 +237,7 @@ class QueueService extends BaseService
             $nextQuery = Queue::query()
                 ->where('queue_status_id', $waitingId)
                 ->where('office_service_id', $counter->office_service_id)
+                ->whereDate('created_at', Carbon::now()->format('Y-m-d'))
                 ->whereNull('counter_id');
 
             if ($counter->office_service_id) {
