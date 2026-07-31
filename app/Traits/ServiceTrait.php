@@ -76,9 +76,9 @@ trait ServiceTrait
         DB::beginTransaction();
         try {
 
-            $sample = $this->repository->store($payload);
+            $data = $this->repository->store($payload);
 
-            $data = collect([$sample]);
+            $data = collect([$data]);
 
             DB::commit();
             return [
@@ -119,11 +119,11 @@ trait ServiceTrait
     {
         DB::beginTransaction();
         try {
-            $sample = $this->repository->find($id);
+            $data = $this->repository->find($id);
 
-            $this->repository->update($sample, $payload);
+            $this->repository->update($data, $payload);
 
-            $data = collect([$sample]);
+            $data = collect([$data]);
 
             DB::commit();
             return [

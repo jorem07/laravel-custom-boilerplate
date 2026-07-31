@@ -6,17 +6,15 @@ use App\Traits\RelationTrait;
 use App\Traits\SearchGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * OfficeService
+ * OfficeServiceRequirement
  *
- * This is the Eloquent model for the OfficeService entity.
+ * This is the Eloquent model for the OfficeServiceRequirement entity.
  * You can override or extend this class to add custom logic, relationships, or scopes.
  */
-class OfficeService extends Model
+class OfficeServiceRequirement extends Model
 {
     // Use Laravel traits for factory, soft deletes, and custom search functionality
     use HasFactory, SoftDeletes, SearchGenerator;
@@ -28,9 +26,8 @@ class OfficeService extends Model
      * @var array
      */
     protected $fillable = [
-        'name',
-        'office_id',
-        'office_service_category_id'
+        'list',
+        'office_service_id'
     ];
 
     /**
@@ -47,9 +44,8 @@ class OfficeService extends Model
      *
      * @var array
      */
-    protected $hidden = ['deleted_at'];
+    protected $hidden = [];
 
-    // You can override or add methods here to customize model
     protected $excludedColumn = [];
 
     public function getExcludedColumn(): array
@@ -57,24 +53,6 @@ class OfficeService extends Model
         return $this->excludedColumn;
     }
 
-    public function office() : BelongsTo
-    {
-        return $this->belongsTo(Office::class, 'office_id', 'id');
-    }
-
-    public function office_service_category() : BelongsTo
-    {
-        return $this->belongsTo(OfficeServiceCategory::class, 'office_service_category_id', 'id');
-    }
-
-    public function counters() : HasMany
-    {
-        return $this->hasMany(Counter::class, 'office_service_id', 'id');
-    }
-
-    public function requirements() : HasMany
-    {
-        return $this->hasMany(OfficeServiceRequirement::class, 'office_service_id', 'id');
-    }
+    // You can override or add methods here to customize model
 }
 

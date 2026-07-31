@@ -2,87 +2,41 @@
 
 namespace App\Services;
 
+use App\DTO\BaseDTO;
 use App\DTO\OfficeService\OfficeServiceDTO;
+use App\Models\OfficeServiceRequirement;
 use App\Repositories\Contracts\OfficeServiceRepositoryInterface;
+use App\Traits\ServiceTrait;
 use Illuminate\Support\Facades\DB;
 
 class OfficeServiceService extends BaseService
 {
+    use ServiceTrait;
+    protected OfficeServiceRepositoryInterface $repository;
 
-    protected OfficeServiceRepositoryInterface $officeService;
-
-    public function __construct(OfficeServiceRepositoryInterface $officeService)
+    public function __construct(OfficeServiceRepositoryInterface $repository)
     {
-        $this->officeService = $officeService;
+        $this->repository = $repository;
     }
 
-    public function index($payload, array $searchable = [], $relation = []): array
-    {
-        $take = $payload['show'] ?? 10;
-        $page = $payload['page'] ?? 1;
-        $skip = ($page > 1) ? ($take * ($page - 1)) : 0;
-        $order = $payload['sort']['order'] ?? null;
-        $sort = $payload['sort']['column'] ?? null;
-
-
-        $selected_relation = $this->format($relation);
-        $searchable = $this->getSearchable('App\\Models\\OfficeService', $relation);
-
-        $data = $this->officeService->query($payload, $searchable, $selected_relation);
-
-        $total = $data->count();
-
-        $list = $data->skip($skip)
-            ->take($take)
-            ->when(isset($payload['sort']), function ($q) use ($sort, $order) {
-                $q->orderBy($sort, $order);
-            })
-            ->get();
-
-
-        return [
-            'message' => 'These are the results.',
-            'error' => null,
-            'current_page' => $take > 0 ? intval($skip / $take) + 1 : 1,
-            'from' => $skip + 1,
-            'to' => min(($skip + $take), $total),
-            'last_page' => ($take > 0) ? ceil($total / $take) : 1,
-            'skip' => $skip,
-            'take' => $take,
-            'total' => $total,
-            'body' => OfficeServiceDTO::fromCollection($list),
-            'searchable' => $searchable
-        ];
-    }
-
-    public function show($id, $payload = [], $relation = []): array
-    {
-        $data = collect([$this->officeService->find($id)]);
-
-        $message = 'Showing Data.';
-        if (!$data) {
-            $message = 'No result found.';
-        }
-
-        return [
-            'message' => $message,
-            'body' => OfficeServiceDTO::fromCollection($data)
-        ];
-    }
-
+    /**
+     * Store data.
+     */
     public function store($payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
 
-            $officeService = $this->officeService->store($payload);
+            $data = $this->repository->store($payload);
 
-            $data = collect([$officeService]);
+            if(isset($payload['requirements'])) $data->requirements()->createMany($payload['requirements']);
+
+            $data = collect([$data]);
 
             DB::commit();
             return [
                 'message' => 'Data created successfully.',
-                'body' => OfficeServiceDTO::fromCollection($data)
+                'body' => BaseDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -90,36 +44,40 @@ class OfficeServiceService extends BaseService
         }
     }
 
-    public function delete($payload, $relation = []): array
-    {
-        DB::beginTransaction();
-        try {
-            $this->officeService->delete($payload);
-            DB::commit();
-            return [
-                'message' => 'Data deleted successfully.',
-                'body' => null
-            ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    } 
-
+    /**
+     * Update specific data.
+     *  @param int $id
+     */
     public function update($id, $payload, $relation) : array
     {
         DB::beginTransaction();
         try {
-            $officeService = $this->officeService->find($id);
+            $data = $this->repository->find($id);
 
-            $this->officeService->update($officeService, $payload);
+            $this->repository->update($data, $payload);
 
-            $data = collect([$officeService]);
+            if(isset($payload['requirements']))
+            {
+                $requirementIds = collect($payload['requirements'])->pluck('id')->filter();
+                $officeService = OfficeServiceRequirement::where('office_service_id', $id);
+
+                $excluded = (clone $officeService)->whereNotIn('id', $requirementIds);
+                $excluded->forceDelete();
+                foreach($payload['requirements'] as $requirement)
+                {
+                    OfficeServiceRequirement::updateOrCreate([
+                        'id' => $requirement['id'] ?? null, 
+                        'office_service_id' => $id
+                    ], $requirement);
+                }
+            }
+
+            $data = collect([$data]);
 
             DB::commit();
             return [
                 'message' => 'Data updated successfully.',
-                'body' => OfficeServiceDTO::fromCollection($data)
+                'body' => BaseDTO::fromCollection($data)
             ];
         } catch (\Exception $e) {
             DB::rollBack();

@@ -46,7 +46,7 @@ trait RepositoryTrait
 
     public function delete($id): bool
     {
-        return $this->model->where('id', $id)->update(['deleted_at' => \Carbon\Carbon::now()]);
+        return $this->model->where('id', $id)->delete();
     }
     
 

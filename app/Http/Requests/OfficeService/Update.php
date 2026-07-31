@@ -5,6 +5,7 @@ namespace App\Http\Requests\OfficeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -39,9 +40,12 @@ class Update extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'name'                       => 'required|unique:office_services,name,' . $this->id . ',deleted_at,NULL',
+            'name'                       => ['required', Rule::unique('office_services')->ignore($this->id)->whereNull('deleted_at')],
             'office_id'                  => 'required|exists:offices,id,deleted_at,NULL',
-            'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL'
+            'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL',
+            'requirements'               => 'required|array',
+            'requirements.*.id'          => ['nullable', 'numeric', Rule::exists('office_service_requirements', 'id')->whereNull('deleted_at')],
+            'requirements.*.list'        => 'required|string'
         ];
         
         return array_merge($this->payloadTaits(), $validate);

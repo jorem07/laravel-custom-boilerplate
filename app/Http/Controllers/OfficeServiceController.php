@@ -17,7 +17,9 @@ class OfficeServiceController extends Controller
     protected array $searchable = [];
 
     protected array $relation = [
-        'office' => ['id', 'name']
+        'office' => ['id', 'name'],
+        'office_service_category' => ['id', 'type'],
+        'requirements'  => ['id', 'list', 'office_service_id']
     ];
 
     public function __construct(OfficeServiceService $officeServiceService)

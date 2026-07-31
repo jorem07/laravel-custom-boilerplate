@@ -5,6 +5,7 @@ namespace App\Http\Requests\OfficeService;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Store
@@ -19,17 +20,6 @@ class Store extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.
      *
@@ -39,9 +29,11 @@ class Store extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'name'                       => 'required|unique:office_services,name,NULL,NULL,deleted_at,NULL',
+            'name'                       => ['required', Rule::unique('office_services')->whereNull('deleted_at')],
             'office_id'                  => 'required|exists:offices,id,deleted_at,NULL',
-            'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL'
+            'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL',
+            'requirements'               => 'required|array',
+            'requirements.*.list'        => 'required|string'
         ];
 
         return array_merge($this->payloadTaits(), $validate);
