@@ -4,6 +4,7 @@ use App\Events\TestingEvent;
 use App\Http\Controllers\AuthController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -90,3 +91,19 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 Route::match(['GET', 'POST'], '/pdf/queue', [\App\Http\Controllers\PDFController::class, 'queue']);
 Route::post('/queues/store', [\App\Http\Controllers\QueueController::class, 'store']);
 Route::get('/queues/show/{queues}', [\App\Http\Controllers\QueueController::class, 'show']);
+
+Route::match(['GET', 'POST'], 'office-services', [\App\Http\Controllers\OfficeServiceController::class, 'index']);
+
+Route::match(['POST', 'GET'],'search', function(Request $request){
+    $payload = $request->validate([
+        'resident_id_no'    => 'required',
+        'page'              => 'nullable',
+        'show'              => 'nullable'
+    ]);
+
+    $response = Http::post(env('BENEFICIARY_SEARCH_API'), $payload);
+
+    if(!$response->json()) abort(404, 'Data not found');
+
+    return response()->json($response->json());
+})->name('api.search');
