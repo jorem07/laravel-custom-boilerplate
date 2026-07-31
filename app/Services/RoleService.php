@@ -2,18 +2,24 @@
 
 namespace App\Services;
 
+use App\DTO\BaseDTO;
+use App\DTO\Role\AbilityDTO;
 use App\DTO\Role\RoleDTO;
+use App\Models\Ability;
 use App\Repositories\Contracts\RoleRepositoryInterface;
 use Illuminate\Support\Facades\DB;
+use Silber\Bouncer\BouncerFacade;
 
 class RoleService extends BaseService
 {
 
     protected RoleRepositoryInterface $role;
+    protected Ability $abilityModel;
 
-    public function __construct(RoleRepositoryInterface $role)
+    public function __construct(RoleRepositoryInterface $role, Ability $abilityModel)
     {
         $this->role = $role;
+        $this->abilityModel = $abilityModel;
     }
 
     public function index($payload, array $searchable = [], $relation = []): array
@@ -77,6 +83,13 @@ class RoleService extends BaseService
 
             $role = $this->role->store($payload);
 
+            if(isset($payload['abilities']))
+            {
+                $abilities = Ability::whereIn('id', $payload['abilities'])->get();
+                BouncerFacade::allow($role)->to($abilities);
+                BouncerFacade::refresh();
+            }
+
             $data = collect([$role]);
 
             DB::commit();
@@ -114,6 +127,14 @@ class RoleService extends BaseService
 
             $this->role->update($role, $payload);
 
+            if(isset($payload['abilities']))
+            {
+                BouncerFacade::disallow($role)->to($role->abilities);
+                $abilities = Ability::whereIn('id', $payload['abilities'])->get();
+                BouncerFacade::allow($role)->to($abilities);
+                BouncerFacade::refresh();
+            }
+
             $data = collect([$role]);
 
             DB::commit();
@@ -125,5 +146,44 @@ class RoleService extends BaseService
             DB::rollBack();
             throw $e;
         }
+    }
+
+    public function getAllAbilities($payload, array $searchable = [], $relation = []): array
+    {
+        $take = $payload['show'] ?? 10;
+        $page = $payload['page'] ?? 1;
+        $skip = ($page > 1) ? ($take * ($page - 1)) : 0;
+        $order = $payload['sort']['order'] ?? null;
+        $sort = $payload['sort']['column'] ?? null;
+
+
+        $selected_relation = $this->format($relation);
+        $searchable = $this->getSearchable('App\\Models\\Ability', $relation);
+
+        $data = $this->abilityModel->newQuery()->with($selected_relation);
+
+        $total = $data->count();
+
+        $list = $data->skip($skip)
+            ->take($take)
+            ->when(isset($payload['sort']), function ($q) use ($sort, $order) {
+                $q->orderBy($sort, $order);
+            })
+            ->get();
+
+
+        return [
+            'message' => 'These are the results.',
+            'error' => null,
+            'current_page' => $take > 0 ? intval($skip / $take) + 1 : 1,
+            'from' => $skip + 1,
+            'to' => min(($skip + $take), $total),
+            'last_page' => ($take > 0) ? ceil($total / $take) : 1,
+            'skip' => $skip,
+            'take' => $take,
+            'total' => $total,
+            'body' => BaseDTO::fromCollection($list),
+            'searchable' => $searchable
+        ];
     }
 }

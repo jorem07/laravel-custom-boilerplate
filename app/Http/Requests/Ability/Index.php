@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Http\Requests\Role;
+namespace App\Http\Requests\Ability;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Bouncer;
 use App\Traits\PayloadTrait;
+use Bouncer;
+use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Delete
+ * Index
  *
  * This request class handles validation and authorization for the request.
  * You can override the authorize() and rules() methods as needed.
  */
-class Delete extends FormRequest
+class Index extends FormRequest
 {
     use PayloadTrait {
         PayloadTrait::prepareForValidation as payloadPrepareForValidation;

@@ -71,6 +71,8 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
     Route::post('/counters/logout', [\App\Http\Controllers\CounterController::class, 'logout']);
     Route::get('/counters/performance', [\App\Http\Controllers\CounterController::class, 'performance']);
 
+    Route::match(['POST', 'GET'], 'abilities', [\App\Http\Controllers\RoleController::class, 'getAllAbilities']);
+
 });
 
 Route::middleware(['guest'])->post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');

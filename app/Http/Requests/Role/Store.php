@@ -5,6 +5,7 @@ namespace App\Http\Requests\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Store
@@ -19,17 +20,6 @@ class Store extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.
      *
@@ -39,7 +29,9 @@ class Store extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'name'          => 'required|string'
+            'name'          => ['required', Rule::unique('roles')->whereNull('deleted_at')],
+            'abilities'     => 'required|array',
+            'abilities.*'   => ['numeric', Rule::exists('abilities', 'id')]
         ];
 
         return array_merge($this->payloadTaits(), $validate);

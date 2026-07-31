@@ -19,17 +19,6 @@ class Index extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.
      *

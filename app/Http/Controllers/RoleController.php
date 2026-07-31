@@ -9,6 +9,7 @@ use App\Http\Requests\Role\Store;
 use App\Http\Requests\Role\Update;
 use App\Http\Requests\Role\Delete;
 use App\Services\RoleService;
+use App\Http\Requests\Ability\Index as AbilityIndex;
 
 class RoleController extends Controller
 {
@@ -60,6 +61,13 @@ class RoleController extends Controller
         $payload = $request->validated();
         $data = $this->roleService->delete($id, $payload);
 
+        return $this->getJsonResponse($data);
+    }
+
+    public function getAllAbilities(AbilityIndex $request) : JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->roleService->getAllAbilities($payload, $this->searchable, $this->relation);
         return $this->getJsonResponse($data);
     }
 }

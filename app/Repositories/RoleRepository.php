@@ -2,10 +2,9 @@
 
 namespace App\Repositories;
 
-use App\Models\Role;
 use App\Repositories\Contracts\RoleRepositoryInterface;
-use App\Traits\QueryGenerator;
 use App\Traits\RepositoryTrait;
+use Silber\Bouncer\Database\Role;
 
 /**
  * RoleRepository
