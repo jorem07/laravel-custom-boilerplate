@@ -18,6 +18,11 @@ class Index extends FormRequest
         PayloadTrait::prepareForValidation as payloadPrepareForValidation;
     }
 
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.

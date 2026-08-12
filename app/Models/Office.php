@@ -48,6 +48,16 @@ class Office extends Model
     // You can override or add methods here to customize model
     protected $excludedColumn = [];
 
+    public function officeServiceCategories()
+    {
+        return $this->hasMany(OfficeServiceCategory::class, 'office_id', 'id');
+    }
+
+    public function officeServices()
+    {
+        return $this->hasMany(OfficeService::class);
+    }
+
     public function getExcludedColumn(): array
     {
         return $this->excludedColumn;

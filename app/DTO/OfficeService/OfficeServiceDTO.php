@@ -24,9 +24,20 @@ class OfficeServiceDTO
         unset($data['office']);
         unset($data['deleted_at']);
 
+        $requirements = $this->officeService->relationLoaded('requirements')
+            ? $this->officeService->requirements->map(fn ($r) => [
+                'id'   => (int) $r->id,
+                'name' => $r->list,
+                'list' => $r->list,
+            ])->values()->toArray()
+            : [];
+
         return array_merge($data, [
-            'office_id'   => $this->office->id,
-            'offices_name' => $this->office->name
+            'code'         => $this->officeService->code,
+            'office_id'    => $this->office?->id ?? (int) $this->officeService->office_id,
+            'offices_name' => $this->office?->name,
+            'requirements' => $requirements,
+            'requirement'  => $requirements,
         ]);
     }
 

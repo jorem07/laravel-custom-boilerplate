@@ -5,6 +5,7 @@ namespace App\Http\Requests\OfficeServiceCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Store
@@ -35,11 +36,16 @@ class Store extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+    }
+
     public function rules(): array
     {
-        // Add your validation rules here
         $validate = [
-            'type'  => 'required|unique:office_service_categories,type,NULL,NULL,deleted_at,NULL'
+            'type'      => ['required', 'string', 'max:255', Rule::unique('office_service_categories', 'type')->whereNull('deleted_at')],
+            'office_id' => 'nullable|exists:offices,id,deleted_at,NULL',
         ];
         
         return array_merge($this->payloadTaits(), $validate);

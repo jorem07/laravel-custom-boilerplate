@@ -19,7 +19,7 @@ class CounterService extends BaseService
 
     protected array $defaultRelations = [
         'user' => ['id', 'first_name', 'last_name'],
-        'office_service' => ['id', 'name'],
+        'office_service' => ['id', 'name', 'office_id'],
     ];
 
     protected array $logRelations = [
@@ -39,6 +39,10 @@ class CounterService extends BaseService
         $skip = ($page > 1) ? ($take * ($page - 1)) : 0;
         $order = $payload['sort']['order'] ?? null;
         $sort = $payload['sort']['column'] ?? null;
+
+        if (empty($relation)) {
+            $relation = $this->defaultRelations;
+        }
 
         $selected_relation = $this->format($relation);
         $searchable = $this->getSearchable('App\\Models\\Counter', $relation);
@@ -71,10 +75,12 @@ class CounterService extends BaseService
 
     public function show($id, $payload = [], $relation = []): array
     {
-        $data = collect([$this->counter->find($id)]);
+        $rel = !empty($relation) ? array_keys($relation) : array_keys($this->defaultRelations);
+        $counter = $this->counter->find($id);
+        $data = collect([$counter ? $counter->load($rel) : null])->filter();
 
         $message = 'Showing Data.';
-        if (!$data) {
+        if (!$data->count()) {
             $message = 'No result found.';
         }
 
@@ -89,7 +95,9 @@ class CounterService extends BaseService
         DB::beginTransaction();
         try {
             $counter = $this->counter->store($payload);
-            $data = collect([$counter->load(array_keys($relation))]);
+            $this->syncUserOfficeForCounter($counter, $payload);
+            $rel = !empty($relation) ? array_keys($relation) : array_keys($this->defaultRelations);
+            $data = collect([$counter->load($rel)]);
 
             DB::commit();
 
@@ -107,6 +115,10 @@ class CounterService extends BaseService
     {
         DB::beginTransaction();
         try {
+            $id = is_array($payload) ? ($payload['id'] ?? null) : $payload;
+            if ($id) {
+                $this->closeActiveLogForCounter((int) $id);
+            }
             $this->counter->delete($payload);
             DB::commit();
 
@@ -120,13 +132,15 @@ class CounterService extends BaseService
         }
     }
 
-    public function update($id, $payload, $relation): array
+    public function update($id, $payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
             $counter = $this->counter->find($id);
             $this->counter->update($counter, $payload);
-            $data = collect([$counter->fresh(array_keys($relation))]);
+            $this->syncUserOfficeForCounter($counter, $payload);
+            $rel = !empty($relation) ? array_keys($relation) : array_keys($this->defaultRelations);
+            $data = collect([$counter->fresh($rel)]);
 
             DB::commit();
 
@@ -137,6 +151,24 @@ class CounterService extends BaseService
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
+        }
+    }
+
+    protected function syncUserOfficeForCounter(Counter $counter, array $payload = []): void
+    {
+        $userId = $payload['user_id'] ?? $counter->user_id ?? null;
+        if (!$userId) return;
+
+        $officeId = $payload['office_id'] ?? null;
+        if (!$officeId && $counter->office_service_id) {
+            $officeId = \App\Models\OfficeService::where('id', $counter->office_service_id)->value('office_id');
+        }
+        if (!$officeId && !empty($counter->service_ids)) {
+            $officeId = \App\Models\OfficeService::whereIn('id', $counter->service_ids)->value('office_id');
+        }
+
+        if ($officeId) {
+            \App\Models\User::where('id', $userId)->update(['office_id' => $officeId]);
         }
     }
 
@@ -216,8 +248,8 @@ class CounterService extends BaseService
             $counter = Counter::query()->lockForUpdate()->findOrFail($payload['counter_id']);
 
             $closedLog = $this->closeActiveLogForCounter($counter->id);
-            $counter->update(['user_id' => null]);
-            $counter = $counter->fresh(array_keys($relation));
+            $rel = !empty($relation) ? array_keys($relation) : array_keys($this->defaultRelations);
+            $counter = $counter->fresh($rel);
 
             DB::commit();
 
@@ -325,10 +357,6 @@ class CounterService extends BaseService
         foreach ($logs as $log) {
             $log->update(['log_out' => Carbon::now()]);
         }
-
-        Counter::query()
-            ->where('user_id', $userId)
-            ->update(['user_id' => null]);
     }
 
     private function broadcastCounterUpdate(

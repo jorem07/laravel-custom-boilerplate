@@ -37,7 +37,10 @@ class Queue extends FormRequest
     public function prepareForValidation(): void
     {
         $this->merge([
-            'is_not_expired'    => DB::table('queues')->where('uuid', $this->uuid)->whereDate('created_at', '>=', \Carbon\Carbon::now())->exists()
+            'is_not_expired' => DB::table('queues')
+                ->where('uuid', $this->uuid)
+                ->whereDate('created_at', '>=', \Carbon\Carbon::today())
+                ->exists()
         ]);
     }
 }

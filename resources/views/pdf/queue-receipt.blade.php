@@ -86,7 +86,7 @@
 
         <img
             class="qr-code"
-            src="data:image/png;base64,{{ $qrCodeBase64 }}"
+            src="data:{{ $qrCodeMime ?? 'image/png' }};base64,{{ $qrCodeBase64 }}"
             alt="Queue QR Code"
         >
 

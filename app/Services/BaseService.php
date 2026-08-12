@@ -11,9 +11,13 @@ class BaseService
     {
         return collect($relation)
             ->map(function ($value, $index) {
-                return !empty($value)
-                    ? $index . ':' . implode(',', $value)
-                    : $index;
+                if (is_numeric($index)) {
+                    return $value;
+                }
+                if (is_array($value) && !empty($value)) {
+                    return $index . ':' . implode(',', $value);
+                }
+                return $index;
             })
             ->values()
             ->toArray();
@@ -25,6 +29,9 @@ class BaseService
         
         $relations = [];
         foreach ($relation as $index => $items) {
+            if (is_numeric($index) || !is_array($items)) {
+                continue;
+            }
             $relationPath = explode('.', $index);
 
             $currentModel = new $model;

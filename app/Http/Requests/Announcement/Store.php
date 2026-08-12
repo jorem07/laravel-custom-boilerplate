@@ -20,20 +20,20 @@ class Store extends FormRequest
     public function rules(): array
     {
         $validate = [
-            'title'                  => 'required',
-            'description'            => 'required',
-
-            'publish_date'           => 'required|date_format:Y-m-d',
-            'publish_time'           => 'required|date_format:H:i,h:i A,h:i a,g:i A,g:i a',
-            'publish_schedule'       => 'required|date',
-         
-            'expire_date'            => 'nullable|date_format:Y-m-d',
-            'expire_time'            => 'nullable|date_format:H:i,h:i A,h:i a,g:i A,g:i a',
-            'expire_schedule'        => 'nullable|date',
-
-            'created_by'             => 'required|int|exists:users,id,deleted_at,NULL',
+            'title'                  => 'required|string',
+            'description'            => 'nullable|string',
+            'status'                 => 'nullable|string',
+            'scheduled_at'           => 'nullable',
+            'expires_at'             => 'nullable',
+            'publish_schedule'       => 'nullable',
+            'expire_schedule'        => 'nullable',
+            'created_by'             => 'nullable|int|exists:users,id,deleted_at,NULL',
             'office_id'              => 'nullable|int|exists:offices,id,deleted_at,NULL',
-            'announcement_status_id' => 'required|int|exists:announcement_statuses,id,deleted_at,NULL'
+            'announcement_status_id' => 'nullable|int|exists:announcement_statuses,id,deleted_at,NULL',
+            'type'                   => 'nullable|string',
+            'icon'                   => 'nullable|string',
+            'icon_color'             => 'nullable|string',
+            'icon_bg_color'          => 'nullable|string',
         ];
 
         return array_merge($this->payloadTaits(), $validate);
@@ -41,24 +41,27 @@ class Store extends FormRequest
 
     public function prepareForValidation(): void
     {
+        $this->payloadPrepareForValidation();
+
         $user = $this->user();
-        
+        $statusVal = $this->status ?? 'Published';
+        $statusId = $this->announcement_status_id ?? ($statusVal === 'Draft' ? 3 : 1);
+
+        $scheduledAt = $this->scheduled_at ?? $this->publish_schedule;
+        $expiresAt = $this->expires_at ?? $this->expire_schedule;
+
         $merge = [
-            'publish_schedule' => trim(implode(' ', array_filter([
-                $this->publish_date,
-                $this->publish_time,
-            ]))),
-            'created_by' => $user->id,
-            'office_id'  => $user->office_id ?? null
+            'status'                 => $statusVal,
+            'announcement_status_id' => $statusId,
+            'description'            => $this->description ?? $this->title,
+            'scheduled_at'           => $scheduledAt,
+            'expires_at'             => $expiresAt,
+            'publish_schedule'       => $scheduledAt,
+            'expire_schedule'        => $expiresAt,
+            'created_by'             => $user?->id ?? $this->created_by ?? 1,
+            'office_id'              => $this->office_id ?? null,
         ];
 
-        if ($this->expire_date || $this->expire_time) {
-            $merge['expire_schedule'] = trim(implode(' ', array_filter([
-                $this->expire_date,
-                $this->expire_time,
-            ])));
-        }
-        
         $this->merge($merge);
     }
 }

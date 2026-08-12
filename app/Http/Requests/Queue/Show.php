@@ -50,10 +50,15 @@ class Show extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
-        $id = DB::table('queues')->where('uuid', $this->route('queues'))->first()->id ?? 0;
+        $routeParam = $this->route('queues');
+        if (is_numeric($routeParam)) {
+            $id = (int) $routeParam;
+        } else {
+            $id = DB::table('queues')->where('uuid', $routeParam)->value('id') ?? 0;
+        }
         
         $this->merge([
-            'id'    =>  $id
+            'id' => $id
         ]);
     }
 }

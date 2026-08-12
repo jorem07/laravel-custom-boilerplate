@@ -16,21 +16,22 @@ class Update extends FormRequest
         return true;
     }
 
-     public function rules(): array
+    public function rules(): array
     {
         $validate = [
-            'title'                  => 'required',
-            'description'            => 'required',
-
-            'publish_date'           => 'required|date_format:Y-m-d',
-            'publish_time'           => 'required|date_format:H:i,h:i A,h:i a,g:i A,g:i a',
-            'publish_schedule'       => 'required|date',
-         
-            'expire_date'            => 'nullable|date_format:Y-m-d',
-            'expire_time'            => 'nullable|date_format:H:i,h:i A,h:i a,g:i A,g:i a',
-            'expire_schedule'        => 'nullable|date',
-
-            'announcement_status_id' => 'required|int|exists:announcement_statuses,id,deleted_at,NULL'
+            'title'                  => 'required|string',
+            'description'            => 'nullable|string',
+            'status'                 => 'nullable|string',
+            'scheduled_at'           => 'nullable',
+            'expires_at'             => 'nullable',
+            'publish_schedule'       => 'nullable',
+            'expire_schedule'        => 'nullable',
+            'office_id'              => 'nullable|int|exists:offices,id,deleted_at,NULL',
+            'announcement_status_id' => 'nullable|int|exists:announcement_statuses,id,deleted_at,NULL',
+            'type'                   => 'nullable|string',
+            'icon'                   => 'nullable|string',
+            'icon_color'             => 'nullable|string',
+            'icon_bg_color'          => 'nullable|string',
         ];
 
         return array_merge($this->payloadTaits(), $validate);
@@ -40,18 +41,21 @@ class Update extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
-        $merge = [
-            'publish_schedule' => trim(implode(' ', array_filter([
-                $this->publish_date,
-                $this->publish_time,
-            ])))
-        ];
+        $scheduledAt = $this->scheduled_at ?? $this->publish_schedule;
+        $expiresAt = $this->expires_at ?? $this->expire_schedule;
 
-        if ($this->expire_date || $this->expire_time) {
-            $merge['expire_schedule'] = trim(implode(' ', array_filter([
-                $this->expire_date,
-                $this->expire_time,
-            ])));
+        $merge = [];
+        if ($scheduledAt) {
+            $merge['scheduled_at'] = $scheduledAt;
+            $merge['publish_schedule'] = $scheduledAt;
+        }
+        if ($expiresAt) {
+            $merge['expires_at'] = $expiresAt;
+            $merge['expire_schedule'] = $expiresAt;
+        }
+        if ($this->status) {
+            $merge['status'] = $this->status;
+            $merge['announcement_status_id'] = $this->announcement_status_id ?? ($this->status === 'Draft' ? 3 : 1);
         }
         
         $this->merge($merge);

@@ -52,5 +52,25 @@ class QueueStatus extends Model
     {
         return $this->excludedColumn;
     }
+
+    public static function ensureDefaultStatuses(): void
+    {
+        try {
+            if (static::query()->count() === 0) {
+                $statuses = [
+                    ['id' => 1, 'name' => 'Waiting'],
+                    ['id' => 2, 'name' => 'Serving'],
+                    ['id' => 3, 'name' => 'Completed'],
+                    ['id' => 4, 'name' => 'Cancelled'],
+                    ['id' => 6, 'name' => 'Skipped'],
+                ];
+                foreach ($statuses as $status) {
+                    static::query()->updateOrCreate(['id' => $status['id']], $status);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if DB is not accessible during early boot
+        }
+    }
 }
 

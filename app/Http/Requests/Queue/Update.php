@@ -40,8 +40,8 @@ class Update extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'queue_status_id'   => 'required|exists:queue_statuses,id,deleted_at,NULL',
-            'counter_id'        => 'required:exists:counters,id,deleted_at,NULL',
+            'queue_status_id'   => ['required', Rule::exists('queue_statuses', 'id')->whereNull('deleted_at')],
+            'counter_id'        => ['required', Rule::exists('counters', 'id')->whereNull('deleted_at')],
             'user_id'           => 'required'
         ];
         

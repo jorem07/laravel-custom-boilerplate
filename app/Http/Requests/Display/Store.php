@@ -18,8 +18,10 @@ class Store extends FormRequest
     {
         return array_merge($this->payloadTaits(), [
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
             'location' => 'nullable|string',
             'status' => 'nullable|string',
+            'layout_type' => 'nullable|string',
             'connection_status' => 'nullable|string',
             'office_id' => 'nullable|exists:offices,id',
         ]);

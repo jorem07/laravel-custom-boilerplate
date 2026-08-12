@@ -31,6 +31,11 @@ class Counter extends Model
         'name',
         'user_id',
         'office_service_id',
+        'service_ids',
+    ];
+
+    protected $casts = [
+        'service_ids' => 'array',
     ];
 
     /**

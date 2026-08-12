@@ -35,13 +35,18 @@ class Store extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+    }
+
     public function rules(): array
     {
         // Add your validation rules here
         $validate = [
-            'name' => 'required|unique:offices,name,NULL,NULL,deleted_at,NULL',
+            'name' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('offices', 'name')->whereNull('deleted_at')],
         ];
-        
+
         return array_merge($this->payloadTaits(), $validate);
     }
 }

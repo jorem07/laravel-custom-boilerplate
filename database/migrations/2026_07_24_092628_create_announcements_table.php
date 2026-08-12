@@ -11,14 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('announcements');
         Schema::create('announcements', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text('description');
-            $table->unsignedBigInteger('announcement_status_id');
+            $table->text('description')->nullable();
+            $table->string('status')->default('Published');
+            $table->unsignedBigInteger('announcement_status_id')->nullable();
+            $table->string('type')->default('info');
+            $table->string('icon')->nullable();
+            $table->string('icon_color')->nullable();
+            $table->string('icon_bg_color')->nullable();
             $table->unsignedBigInteger('office_id')->nullable();
-            $table->unsignedBigInteger('created_by');
-            $table->dateTime('publish_schedule');
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->dateTime('scheduled_at')->nullable();
+            $table->dateTime('expires_at')->nullable();
+            $table->dateTime('publish_schedule')->nullable();
             $table->dateTime('expire_schedule')->nullable();
             $table->timestamps();
             $table->softDeletes();

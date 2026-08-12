@@ -8,7 +8,7 @@ use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
-use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\File;
 
 class PDFService
@@ -17,11 +17,12 @@ class PDFService
     {
         $queue = $this->findQueue($payload);
 
-        // $displayNumber = $this->formatDisplayNumber($queue->queue_no);
         $displayNumber = $queue->queue_no;
         
-        $issuedAt = Carbon::parse($queue->time_start)->format('Y-m-d H:i:s');
-        $qrCodeBase64 = $this->generateQrCodeBase64(
+        $issuedTimestamp = $queue->time_start ?? $queue->created_at ?? Carbon::now();
+        $issuedAt = Carbon::parse($issuedTimestamp)->format('Y-m-d h:i A');
+
+        $qrCodeData = $this->generateQrCodeData(
             url('/queue/status/' . $queue->uuid)
         );
         $logoBase64 = $this->resolveLogoBase64();
@@ -30,7 +31,8 @@ class PDFService
             'queue' => $queue,
             'displayNumber' => $displayNumber,
             'issuedAt' => $issuedAt,
-            'qrCodeBase64' => $qrCodeBase64,
+            'qrCodeBase64' => $qrCodeData['base64'],
+            'qrCodeMime' => $qrCodeData['mime'],
             'logoBase64' => $logoBase64,
         ]);
 
@@ -63,20 +65,39 @@ class PDFService
         return $queueNo;
     }
 
-    private function generateQrCodeBase64(string $content): string
+    private function generateQrCodeData(string $content): array
     {
-        $builder = new Builder(
-            writer: new PngWriter(),
-            data: $content,
-            encoding: new Encoding('UTF-8'),
-            errorCorrectionLevel: ErrorCorrectionLevel::Low,
-            size: 180,
-            margin: 0,
-        );
+        try {
+            $builder = new Builder(
+                writer: new PngWriter(),
+                data: $content,
+                encoding: new Encoding('UTF-8'),
+                errorCorrectionLevel: ErrorCorrectionLevel::Low,
+                size: 180,
+                margin: 0,
+            );
 
-        $result = $builder->build();
+            $result = $builder->build();
+            return [
+                'base64' => base64_encode($result->getString()),
+                'mime' => 'image/png',
+            ];
+        } catch (\Throwable $e) {
+            $builder = new Builder(
+                writer: new SvgWriter(),
+                data: $content,
+                encoding: new Encoding('UTF-8'),
+                errorCorrectionLevel: ErrorCorrectionLevel::Low,
+                size: 180,
+                margin: 0,
+            );
 
-        return base64_encode($result->getString());
+            $result = $builder->build();
+            return [
+                'base64' => base64_encode($result->getString()),
+                'mime' => 'image/svg+xml',
+            ];
+        }
     }
 
     private function resolveLogoBase64(): ?string

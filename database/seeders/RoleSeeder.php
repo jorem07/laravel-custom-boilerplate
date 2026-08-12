@@ -20,5 +20,7 @@ class RoleSeeder extends Seeder
         ], [
             'title' => 'Service Officer',
         ]);
+
+        Bouncer::allow('admin')->everything();
     }
 }

@@ -95,11 +95,12 @@ trait ServiceTrait
      * Delete specific data.
      * @param int $id
      */
-    public function delete($payload, $relation = []): array
+    public function delete($id, $relation = []): array
     {
         DB::beginTransaction();
         try {
-            $this->repository->delete($payload);
+            $targetId = is_array($id) ? ($id['id'] ?? null) : $id;
+            $this->repository->delete($targetId);
             DB::commit();
             return [
                 'message' => 'Data deleted successfully.',

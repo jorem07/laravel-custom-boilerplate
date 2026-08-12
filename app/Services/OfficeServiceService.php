@@ -26,17 +26,22 @@ class OfficeServiceService extends BaseService
     {
         DB::beginTransaction();
         try {
+            $requirements = $payload['requirements'] ?? [];
+            unset($payload['requirements'], $payload['requirement']);
 
             $data = $this->repository->store($payload);
 
-            if(isset($payload['requirements'])) $data->requirements()->createMany($payload['requirements']);
+            if (!empty($requirements)) {
+                $data->requirements()->createMany($requirements);
+            }
 
-            $data = collect([$data]);
+            $data->load(['office', 'requirements']);
+            $collection = collect([$data]);
 
             DB::commit();
             return [
                 'message' => 'Data created successfully.',
-                'body' => BaseDTO::fromCollection($data)
+                'body' => OfficeServiceDTO::fromCollection($collection)
             ];
         } catch (\Exception $e) {
             DB::rollBack();
@@ -46,38 +51,66 @@ class OfficeServiceService extends BaseService
 
     /**
      * Update specific data.
-     *  @param int $id
+     * @param int $id
      */
-    public function update($id, $payload, $relation) : array
+    public function update($id, $payload, $relation = []): array
     {
         DB::beginTransaction();
         try {
-            $data = $this->repository->find($id);
+            $targetId = is_array($id) ? ($id['id'] ?? null) : $id;
+            $data = $this->repository->find($targetId);
+
+            $requirements = $payload['requirements'] ?? [];
+            unset($payload['requirements'], $payload['requirement']);
 
             $this->repository->update($data, $payload);
 
-            if(isset($payload['requirements']))
-            {
-                $requirementIds = collect($payload['requirements'])->pluck('id')->filter();
-                $officeService = OfficeServiceRequirement::where('office_service_id', $id);
+            if (isset($requirements)) {
+                $requirementIds = collect($requirements)->pluck('id')->filter();
+                OfficeServiceRequirement::where('office_service_id', $targetId)
+                    ->whereNotIn('id', $requirementIds)
+                    ->delete();
 
-                $excluded = (clone $officeService)->whereNotIn('id', $requirementIds);
-                $excluded->forceDelete();
-                foreach($payload['requirements'] as $requirement)
-                {
+                foreach ($requirements as $requirement) {
                     OfficeServiceRequirement::updateOrCreate([
-                        'id' => $requirement['id'] ?? null, 
-                        'office_service_id' => $id
-                    ], $requirement);
+                        'id' => $requirement['id'] ?? null,
+                        'office_service_id' => $targetId,
+                    ], [
+                        'list' => $requirement['list'] ?? '',
+                        'office_service_id' => $targetId,
+                    ]);
                 }
             }
 
-            $data = collect([$data]);
+            $data->load(['office', 'requirements']);
+            $collection = collect([$data]);
 
             DB::commit();
             return [
                 'message' => 'Data updated successfully.',
-                'body' => BaseDTO::fromCollection($data)
+                'body' => OfficeServiceDTO::fromCollection($collection)
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function delete($id, $relation = []): array
+    {
+        DB::beginTransaction();
+        try {
+            $targetId = is_array($id) ? ($id['id'] ?? null) : $id;
+            $service = \App\Models\OfficeService::withTrashed()->find($targetId);
+            if ($service) {
+                OfficeServiceRequirement::where('office_service_id', $targetId)->forceDelete();
+                \App\Models\Counter::where('office_service_id', $targetId)->update(['office_service_id' => null]);
+                $service->forceDelete();
+            }
+            DB::commit();
+            return [
+                'message' => 'Data deleted successfully.',
+                'body' => null
             ];
         } catch (\Exception $e) {
             DB::rollBack();

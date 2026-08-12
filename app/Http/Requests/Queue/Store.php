@@ -8,6 +8,7 @@ use Bouncer;
 use App\Traits\PayloadTrait;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Store
@@ -42,8 +43,8 @@ class Store extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'queue_status_id'   => 'required|exists:queue_statuses,id,deleted_at,NULL',
-            'office_service_id' => 'required|exists:office_services,id,deleted_at,NULL',
+            'queue_status_id'   => ['required', Rule::exists('queue_statuses', 'id')->whereNull('deleted_at')],
+            'office_service_id' => ['required', Rule::exists('office_services', 'id')->whereNull('deleted_at')],
             'uuid'              => 'required|uuid|unique:queues,uuid',
             'time_start'        => 'required'
         ];
@@ -54,6 +55,7 @@ class Store extends FormRequest
     public function prepareForValidation(): void
     {
         $this->payloadPrepareForValidation();
+        \App\Models\QueueStatus::ensureDefaultStatuses();
         $uuid = Str::uuid7();
 
         $this->merge([

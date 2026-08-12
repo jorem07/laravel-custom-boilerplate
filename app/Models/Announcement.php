@@ -15,11 +15,13 @@ class Announcement extends Model
     protected $fillable = [
         'title',
         'description',
+        'status',
         'announcement_status_id',
         'type',
         'icon',
         'icon_color',
         'icon_bg_color',
+        'office_id',
         'scheduled_at',
         'expires_at',
         'created_by',

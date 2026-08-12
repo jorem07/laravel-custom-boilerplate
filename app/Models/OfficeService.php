@@ -29,6 +29,10 @@ class OfficeService extends Model
      */
     protected $fillable = [
         'name',
+        'code',
+        'subtitle',
+        'icon',
+        'icon_color',
         'office_id',
         'office_service_category_id'
     ];

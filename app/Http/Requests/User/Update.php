@@ -27,19 +27,22 @@ class Update extends FormRequest
      */
     public function rules(): array
     {
-        // Add your validation rules here
         $validate = [
             'first_name'      => 'required|string',
-            'middle_name'     => 'required|string',
+            'middle_name'     => 'nullable|string',
             'last_name'       => 'required|string',
             'allow_login'     => 'required|boolean',
             'status'          => 'required|boolean',
-            'current_password'=> $this->is_admin ? 'nullable' : 'required|current_password',
+            'current_password'=> 'nullable',
             'new_password'    => 'nullable|string',
-            'password'        => 'nullable|string|confirmed',
+            'password'        => 'nullable|string',
             'email'           => ['required', Rule::unique('users')->ignore($this->id)->whereNull('deleted_at')],
-            'role_id'         => 'required|array|exists:roles,id,deleted_at,NULL',
-            'is_admin'        => 'required|boolean'
+            'role_id'         => 'required|array',
+            'role_id.*'       => 'exists:roles,id,deleted_at,NULL',
+            'office_id'       => 'nullable|exists:offices,id,deleted_at,NULL',
+            'office_ids'      => 'nullable|array',
+            'office_ids.*'    => 'exists:offices,id,deleted_at,NULL',
+            'is_admin'        => 'nullable|boolean'
         ];
         
         return array_merge($this->payloadTaits(), $validate);
@@ -49,13 +52,17 @@ class Update extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
-        $user = $this->user()->load(['roles']);
+        $user = $this->user()?->load(['roles']);
+        $roles = $user ? $user->roles->pluck('name')->toArray() : [];
 
-        $roles = $user->roles->pluck('name')->toArray();
+        $merge = [
+            'is_admin' => (bool) array_intersect(['admin', 'super-admin'], $roles)
+        ];
 
-        $this->merge([
-            'password'  => $this->new_password,
-            'is_admin'  => (bool) array_intersect(['admin', 'super-admin'], $roles)
-        ]);
+        if ($this->new_password) {
+            $merge['password'] = $this->new_password;
+        }
+
+        $this->merge($merge);
     }
 }

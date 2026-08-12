@@ -17,6 +17,8 @@ class QueueService extends BaseService
     private const STATUS_WAITING = 'Waiting';
     private const STATUS_SERVING = 'Serving';
     private const STATUS_COMPLETED = 'Completed';
+    private const STATUS_SKIPPED = 'Skipped';
+    private const STATUS_CANCELLED = 'Cancelled';
 
     protected QueueRepositoryInterface $queue;
 
@@ -24,18 +26,14 @@ class QueueService extends BaseService
 
     protected CounterPerformanceService $counterPerformanceService;
 
-    protected QueueEstimatedWaitService $queueEstimatedWaitService;
-
     public function __construct(
         QueueRepositoryInterface $queue,
         CounterService $counterService,
         CounterPerformanceService $counterPerformanceService,
-        QueueEstimatedWaitService $queueEstimatedWaitService,
     ) {
         $this->queue = $queue;
         $this->counterService = $counterService;
         $this->counterPerformanceService = $counterPerformanceService;
-        $this->queueEstimatedWaitService = $queueEstimatedWaitService;
     }
 
     public function index($payload, array $searchable = [], $relation = []): array
@@ -52,9 +50,18 @@ class QueueService extends BaseService
 
         $data = $this->queue->query($payload, $searchable, $selected_relation);
 
+        if (!empty($payload['office_id'])) {
+            $officeId = (int) $payload['office_id'];
+            $data->where(function ($q) use ($officeId) {
+                $q->where('office_id', $officeId)
+                  ->orWhereHas('office_service', fn ($sub) => $sub->where('office_id', $officeId));
+            });
+        }
+
         $total = $data->count();
 
-        $list = $data->skip($skip)
+        $list = $data->with(['office_service', 'queue_status', 'counter', 'user'])
+            ->skip($skip)
             ->take($take)
             ->when(isset($payload['sort']), function ($q) use ($sort, $order) {
                 $q->orderBy($sort, $order);
@@ -106,7 +113,6 @@ class QueueService extends BaseService
 
             DB::commit();
 
-            $this->queueEstimatedWaitService->refreshForOfficeService((int) $payload['office_service_id']);
             $this->broadcastQueueUpdate('created', null, $relation);
 
             return [
@@ -156,19 +162,28 @@ class QueueService extends BaseService
         }
     }
 
-    private function generateQueueNo(int $serviceId): string|null
+    private function generateQueueNo(int $serviceId): string
     {
-        $service = DB::table('office_services as os')
-            ->join('office_service_categories as osc', 'os.office_service_category_id', '=', 'osc.id')
-            ->where('os.id', $serviceId)
-            ->value('osc.type');
+        $serviceRow = DB::table('office_services')
+            ->where('id', $serviceId)
+            ->select('code', 'name')
+            ->first();
 
-        if (!$service) {
-            return null;
+        $prefix = 'Q';
+        if ($serviceRow) {
+            if (!empty($serviceRow->code)) {
+                $prefix = strtoupper(trim($serviceRow->code));
+            } else {
+                $words = explode(' ', trim($serviceRow->name));
+                if (count($words) >= 2) {
+                    $prefix = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+                } else {
+                    $prefix = strtoupper(substr($serviceRow->name, 0, 2));
+                }
+            }
         }
 
-        $prefix = strtoupper($service);
-        $today  = Carbon::today();
+        $today = Carbon::today();
 
         $lastQueueNo = DB::table('queues')
             ->where('queue_no', 'like', $prefix . '-%')
@@ -177,7 +192,8 @@ class QueueService extends BaseService
             ->value('queue_no');
 
         if ($lastQueueNo) {
-            $lastNumber = (int) substr($lastQueueNo, strlen($prefix) + 1);
+            $parts = explode('-', $lastQueueNo);
+            $lastNumber = (int) end($parts);
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1;
@@ -188,8 +204,6 @@ class QueueService extends BaseService
 
     public function current(array $relation = []): array
     {
-        $this->queueEstimatedWaitService->refreshAll();
-
         $queues = $this->getActiveQueues($relation);
         $snapshot = $this->counterService->getSnapshot();
         $performances = $this->counterPerformanceService->getTodaySnapshot();
@@ -227,8 +241,6 @@ class QueueService extends BaseService
                 $servingQueue->update([
                     'queue_status_id' => $completedId,
                     'time_end' => Carbon::now(),
-                    'estimated_wait_minutes' => null,
-                    'estimated_time_return' => null,
                 ]);
 
                 $this->counterPerformanceService->recordCompletion($servingQueue->fresh());
@@ -236,11 +248,15 @@ class QueueService extends BaseService
 
             $nextQuery = Queue::query()
                 ->where('queue_status_id', $waitingId)
-                ->where('office_service_id', $counter->office_service_id)
                 ->whereDate('created_at', Carbon::now()->format('Y-m-d'))
-                ->whereNull('counter_id');
+                ->where(function ($q) use ($counter) {
+                    $q->whereNull('counter_id')
+                      ->orWhere('counter_id', $counter->id);
+                });
 
-            if ($counter->office_service_id) {
+            if (!empty($payload['service_ids']) && is_array($payload['service_ids'])) {
+                $nextQuery->whereIn('office_service_id', array_map('intval', $payload['service_ids']));
+            } elseif ($counter->office_service_id) {
                 $nextQuery->where('office_service_id', $counter->office_service_id);
             }
 
@@ -252,10 +268,6 @@ class QueueService extends BaseService
 
             if (!$nextQueue) {
                 DB::commit();
-
-                if ($counter->office_service_id) {
-                    $this->queueEstimatedWaitService->refreshForOfficeService((int) $counter->office_service_id);
-                }
 
                 $queues = $this->getActiveQueues($relation);
                 $snapshot = $this->counterService->getSnapshot();
@@ -279,19 +291,11 @@ class QueueService extends BaseService
                 'counter_id' => $counter->id,
                 'user_id' => $userId,
                 'queue_status_id' => $servingId,
-                'estimated_wait_minutes' => null,
-                'estimated_time_return' => null,
             ]);
 
             $called = $nextQueue->fresh(['queue_status', 'counter', 'user']);
 
             DB::commit();
-
-            if ($counter->office_service_id) {
-                $this->queueEstimatedWaitService->refreshForOfficeService((int) $counter->office_service_id);
-            } else {
-                $this->queueEstimatedWaitService->refreshAll();
-            }
 
             $queues = $this->getActiveQueues($relation);
             $calledDto = QueueDTO::fromModel($called)->toArray();
@@ -316,12 +320,159 @@ class QueueService extends BaseService
         }
     }
 
+    public function complete(array $payload, array $relation = []): array
+    {
+        DB::beginTransaction();
+        try {
+            $completedId = $this->resolveStatusId(self::STATUS_COMPLETED);
+            $queue = Queue::findOrFail($payload['queue_id']);
+
+            $queue->update([
+                'queue_status_id' => $completedId,
+                'counter_id' => $payload['counter_id'],
+                'time_end' => Carbon::now(),
+            ]);
+
+            $this->counterPerformanceService->recordCompletion($queue->fresh());
+
+            DB::commit();
+
+            $queues = $this->getActiveQueues($relation);
+            $snapshot = $this->counterService->getSnapshot();
+
+            $this->broadcastQueueUpdate('complete', QueueDTO::fromModel($queue)->toArray(), $relation, 'Queue completed.');
+
+            return [
+                'message' => 'Queue marked as completed.',
+                'body' => QueueDTO::fromCollection($queues),
+                'total' => $queues->count(),
+                'others' => $snapshot,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function skip(array $payload, array $relation = []): array
+    {
+        DB::beginTransaction();
+        try {
+            $statusName = !empty($payload['add_to_no_show_list']) ? self::STATUS_CANCELLED : self::STATUS_SKIPPED;
+            $statusId = $this->resolveStatusId($statusName);
+            $queue = Queue::findOrFail($payload['queue_id']);
+
+            $queue->update([
+                'queue_status_id' => $statusId,
+                'counter_id' => $payload['counter_id'],
+                'time_end' => Carbon::now(),
+            ]);
+
+            DB::commit();
+
+            $queues = $this->getActiveQueues($relation);
+            $snapshot = $this->counterService->getSnapshot();
+
+            $this->broadcastQueueUpdate('skip', QueueDTO::fromModel($queue)->toArray(), $relation, 'Queue skipped.');
+
+            return [
+                'message' => 'Queue skipped.',
+                'body' => QueueDTO::fromCollection($queues),
+                'total' => $queues->count(),
+                'others' => $snapshot,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function recall(array $payload, array $relation = []): array
+    {
+        DB::beginTransaction();
+        try {
+            $queue = Queue::findOrFail($payload['queue_id']);
+            $mode = $payload['mode'] ?? 'immediate';
+
+            if ($mode === 'requeue' || $mode === 'restore_waiting') {
+                $statusId = $this->resolveStatusId(self::STATUS_WAITING);
+                $queue->update([
+                    'queue_status_id' => $statusId,
+                    'counter_id' => null,
+                    'time_end' => null,
+                ]);
+            } else {
+                $statusId = $this->resolveStatusId(self::STATUS_SERVING);
+                $queue->update([
+                    'queue_status_id' => $statusId,
+                    'counter_id' => $payload['counter_id'],
+                    'time_end' => null,
+                ]);
+            }
+
+            DB::commit();
+
+            $queues = $this->getActiveQueues($relation);
+            $snapshot = $this->counterService->getSnapshot();
+
+            $this->broadcastQueueUpdate('recall', QueueDTO::fromModel($queue)->toArray(), $relation, 'Queue recalled.');
+
+            return [
+                'message' => 'Queue recalled.',
+                'body' => QueueDTO::fromCollection($queues),
+                'total' => $queues->count(),
+                'others' => $snapshot,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function transfer(array $payload, array $relation = []): array
+    {
+        DB::beginTransaction();
+        try {
+            $queue = Queue::findOrFail($payload['queue_id']);
+            $waitingId = $this->resolveStatusId(self::STATUS_WAITING);
+
+            $remarks = $payload['reason'] ?? $payload['remarks'] ?? $queue->remarks;
+            $sourceCounterId = $payload['counter_id'] ?? $queue->counter_id;
+
+            $queue->update([
+                'transferred_from_counter_id' => $sourceCounterId,
+                'counter_id'                  => $payload['target_counter_id'],
+                'queue_status_id'             => $waitingId,
+                'remarks'                     => $remarks,
+            ]);
+
+            DB::commit();
+
+            $freshQueue = $queue->fresh(['office_service', 'queue_status', 'transferred_from_counter']);
+
+            $queues = $this->getActiveQueues($relation);
+            $snapshot = $this->counterService->getSnapshot();
+
+            $this->broadcastQueueUpdate('transfer', QueueDTO::fromModel($freshQueue)->toArray(), $relation, 'Queue transferred.');
+
+            return [
+                'message' => 'Queue transferred successfully.',
+                'body'    => QueueDTO::fromCollection($queues),
+                'total'   => $queues->count(),
+                'others'  => $snapshot,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
     private function getActiveQueues(array $relation = []): Collection
     {
         $waitingId = $this->resolveStatusId(self::STATUS_WAITING);
         $servingId = $this->resolveStatusId(self::STATUS_SERVING);
 
-        $with = $this->mapRelationsForEagerLoad($relation);
+        $with = array_unique(array_merge($this->mapRelationsForEagerLoad($relation), ['office_service', 'queue_status', 'transferred_from_counter']));
 
         return Queue::query()
             ->with($with)
@@ -339,7 +490,24 @@ class QueueService extends BaseService
 
     private function resolveStatusId(string $name): int
     {
-        return QueueStatus::query()->firstOrCreate(['name' => $name])->id;
+        $status = QueueStatus::query()
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->first();
+
+        if ($status) {
+            return $status->id;
+        }
+
+        $fallbackMap = [
+            'waiting' => 1,
+            'serving' => 2,
+            'completed' => 3,
+            'cancelled' => 4,
+            'pending' => 5,
+            'skipped' => 6,
+        ];
+
+        return $fallbackMap[strtolower($name)] ?? 1;
     }
 
     private function broadcastQueueUpdate(

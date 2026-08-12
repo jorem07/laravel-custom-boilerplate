@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use App\Http\Requests\Queue\Index;
-use App\Http\Requests\Queue\Show;
-use App\Http\Requests\Queue\Store;
-use App\Http\Requests\Queue\Update;
-use App\Http\Requests\Queue\Delete;
-use App\Http\Requests\Queue\Next;
+use App\Http\Requests\Queue\Complete;
 use App\Http\Requests\Queue\Current;
+use App\Http\Requests\Queue\Delete;
+use App\Http\Requests\Queue\Index;
+use App\Http\Requests\Queue\Next;
+use App\Http\Requests\Queue\Recall;
+use App\Http\Requests\Queue\Show;
+use App\Http\Requests\Queue\Skip;
+use App\Http\Requests\Queue\Store;
+use App\Http\Requests\Queue\Transfer;
+use App\Http\Requests\Queue\Update;
 use App\Services\QueueService;
 
 class QueueController extends Controller
@@ -80,6 +84,38 @@ class QueueController extends Controller
     {
         $payload = $request->validated();
         $data = $this->queueService->next($payload, $this->relation);
+
+        return $this->getJsonResponse($data);
+    }
+
+    public function complete(Complete $request): JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->queueService->complete($payload, $this->relation);
+
+        return $this->getJsonResponse($data);
+    }
+
+    public function skip(Skip $request): JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->queueService->skip($payload, $this->relation);
+
+        return $this->getJsonResponse($data);
+    }
+
+    public function recall(Recall $request): JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->queueService->recall($payload, $this->relation);
+
+        return $this->getJsonResponse($data);
+    }
+
+    public function transfer(Transfer $request): JsonResponse
+    {
+        $payload = $request->validated();
+        $data = $this->queueService->transfer($payload, $this->relation);
 
         return $this->getJsonResponse($data);
     }

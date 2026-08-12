@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\DTO\User\UserDTO;
-use App\Events\TestingEvent;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +24,9 @@ class UserService extends BaseService
         $order = $payload['sort']['order'] ?? null;
         $sort = $payload['sort']['column'] ?? null;
 
+        if (empty($relation)) {
+            $relation = ['roles'];
+        }
 
         $selected_relation = $this->format($relation);
         $searchable = $this->getSearchable('App\\Models\\User', $relation);
@@ -75,12 +77,31 @@ class UserService extends BaseService
     {
         if (isset($payload['password'])) $payload['password'] = Hash::make($payload['password']);
 
+        if (empty($payload['office_id']) && !empty($payload['office_ids']) && is_array($payload['office_ids'])) {
+            $cleanOfficeIds = array_values(array_unique(array_filter(array_map('intval', $payload['office_ids']))));
+            if (count($cleanOfficeIds)) {
+                $payload['office_id'] = $cleanOfficeIds[0];
+            }
+        }
+
+        if (DB::getDriverName() === 'pgsql') {
+            $seq = DB::selectOne("SELECT pg_get_serial_sequence('users', 'id') as seq");
+            if ($seq && $seq->seq) {
+                $maxId = DB::table('users')->max('id') ?? 0;
+                DB::statement("SELECT setval('{$seq->seq}', " . ($maxId + 1) . ", false)");
+            }
+        }
+
         DB::beginTransaction();
         try {
 
             $user = $this->user->store($payload);
-            $user->assign($payload['role_id']);
+            $roleIds = isset($payload['role_id']) 
+                ? (is_array($payload['role_id']) ? $payload['role_id'] : [$payload['role_id']])
+                : [2];
+            $user->roles()->sync(array_filter($roleIds));
 
+            $user = $user->fresh(['roles']);
             $data = collect([$user]);
 
             DB::commit();
@@ -94,11 +115,11 @@ class UserService extends BaseService
         }
     }
 
-    public function delete($payload, $relation = []): array
+    public function delete($id, $relation = []): array
     {
         DB::beginTransaction();
         try {
-            $this->user->delete($payload);
+            $this->user->delete($id);
             DB::commit();
             return [
                 'message' => 'Data deleted successfully.',
@@ -114,13 +135,23 @@ class UserService extends BaseService
     {
         if (isset($payload['password'])) $payload['password'] = Hash::make($payload['password']);
 
+        if (empty($payload['office_id']) && !empty($payload['office_ids']) && is_array($payload['office_ids'])) {
+            $cleanOfficeIds = array_values(array_unique(array_filter(array_map('intval', $payload['office_ids']))));
+            if (count($cleanOfficeIds)) {
+                $payload['office_id'] = $cleanOfficeIds[0];
+            }
+        }
+
         DB::beginTransaction();
         try {
             $user = $this->user->find($id);
 
             $this->user->update($user, $payload);
 
-            $user->roles()->sync($payload['role_id']);
+            if (isset($payload['role_id'])) {
+                $roleIds = is_array($payload['role_id']) ? $payload['role_id'] : [$payload['role_id']];
+                $user->roles()->sync($roleIds);
+            }
 
             $user->refresh();
             $data = collect([$user]);
@@ -129,8 +160,6 @@ class UserService extends BaseService
                 'message' => 'Data updated successfully.',
                 'body' => UserDTO::fromCollection($data),
             ];
-
-            // event(new TestingEvent($response));
 
             DB::commit();
             return $response;

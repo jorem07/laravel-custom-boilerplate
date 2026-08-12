@@ -30,6 +30,11 @@ trait PayloadTrait
     
     public function payloadTaits() : array
     {
+        return $this->payloadTraits();
+    }
+
+    public function payloadTraits() : array
+    {
         $this->validateGlobal= [
             'search'         => 'nullable|array',
             'full_search'    => 'nullable',

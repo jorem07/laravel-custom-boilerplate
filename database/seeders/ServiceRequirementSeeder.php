@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\ServiceRequirement;
+use App\Models\OfficeServiceRequirement;
 use Illuminate\Database\Seeder;
 
 class ServiceRequirementSeeder extends Seeder
@@ -38,14 +38,13 @@ class ServiceRequirementSeeder extends Seeder
         ];
 
         // Truncate first
-        ServiceRequirement::query()->truncate();
+        OfficeServiceRequirement::query()->forceDelete();
 
         foreach ($requirementsMap as $serviceId => $reqs) {
-            foreach ($reqs as $index => $req) {
-                ServiceRequirement::create([
+            foreach ($reqs as $req) {
+                OfficeServiceRequirement::create([
                     'office_service_id' => $serviceId,
-                    'description' => $req,
-                    'sort_order' => $index + 1,
+                    'list' => $req,
                 ]);
             }
         }

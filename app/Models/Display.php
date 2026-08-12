@@ -14,8 +14,10 @@ class Display extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'location',
         'status',
+        'layout_type',
         'connection_status',
         'last_heartbeat_at',
         'office_id',

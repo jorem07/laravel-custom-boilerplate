@@ -9,30 +9,19 @@ class CounterSeeder extends Seeder
 {
     public function run(): void
     {
-        $locations = [
-            "Ground Floor - Left Wing",
-            "Ground Floor - Left Wing",
-            "Ground Floor - Center",
-            "Ground Floor - Center",
-            "Ground Floor - Right Wing",
-            "Second Floor - Left Wing",
-            "Second Floor - Left Wing",
-            "Second Floor - Right Wing",
-            "Third Floor - Center",
-            "Third Floor - Right Wing",
-            "Third Floor - Center",
-            "Third Floor - Right Wing",
+        $counters = [
+            ['id' => 1, 'name' => 'Counter 1', 'user_id' => null, 'office_service_id' => 1, 'service_ids' => [1, 2]],
+            ['id' => 2, 'name' => 'Counter 2', 'user_id' => null, 'office_service_id' => 2, 'service_ids' => [2, 3]],
+            ['id' => 3, 'name' => 'Counter 3', 'user_id' => null, 'office_service_id' => 3, 'service_ids' => [3]],
+            ['id' => 4, 'name' => 'Counter 4', 'user_id' => null, 'office_service_id' => 4, 'service_ids' => [4]],
+            ['id' => 5, 'name' => 'Counter 5', 'user_id' => null, 'office_service_id' => 5, 'service_ids' => [5]],
+            ['id' => 6, 'name' => 'Counter 6', 'user_id' => null, 'office_service_id' => 6, 'service_ids' => [6]],
         ];
 
-        for ($i = 1; $i <= 12; $i++) {
-            $isAssigned = ($i <= 10);
-            Counter::updateOrCreate(['id' => $i], [
-                'name' => "Counter {$i}",
-                'location' => $locations[$i - 1],
-                'queue_display_status' => $isAssigned ? 'Connected' : 'Disconnected',
-                'user_id' => $isAssigned ? ($i === 1 ? 2 : ($i === 2 ? 3 : ($i === 3 ? 4 : ($i === 4 ? 7 : ($i === 5 ? 8 : ($i === 6 ? 5 : ($i === 7 ? 6 : ($i === 8 ? 9 : ($i === 9 ? 10 : 11))))))))) : null,
-                'office_service_id' => ($i - 1) % 6 + 1,
-            ]);
+        foreach ($counters as $counter) {
+            Counter::updateOrCreate(['id' => $counter['id']], $counter);
         }
     }
 }
+
+

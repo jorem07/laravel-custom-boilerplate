@@ -26,7 +26,8 @@ class OfficeServiceCategory extends Model
      * @var array
      */
     protected $fillable = [
-        'type'
+        'type',
+        'office_id'
     ];
 
     /**
@@ -54,6 +55,11 @@ class OfficeServiceCategory extends Model
     public function getExcludedColumn(): array
     {
         return $this->excludedColumn;
+    }
+
+    public function office()
+    {
+        return $this->belongsTo(Office::class, 'office_id', 'id');
     }
 }
 

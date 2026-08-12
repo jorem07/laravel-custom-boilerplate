@@ -35,6 +35,11 @@ class Delete extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+    }
+
     public function rules(): array
     {
         // Add your validation rules here

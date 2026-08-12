@@ -24,7 +24,7 @@ class CounterController extends Controller
 
     protected array $relation = [
         'user' => ['id', 'first_name', 'last_name'],
-        'office_service' => ['id', 'name'],
+        'office_service' => ['id', 'name', 'office_id'],
     ];
 
     public function __construct(

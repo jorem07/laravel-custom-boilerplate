@@ -1,6 +1,5 @@
 <?php
 
-use App\Events\TestingEvent;
 use App\Http\Controllers\AuthController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -8,6 +7,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'time' => now()->toIso8601String(),
+    ]);
+});
 
 // Route::middleware('log.route')->post('/auth/login', [AuthController::class, 'login'])->name('api.login');
 Route::middleware(['log.route', 'auth:sanctum'])->post('/auth/logout', [AuthController::class, 'logout'])->name('api.logout');
@@ -63,8 +69,13 @@ Route::group(['middleware' => ["auth:sanctum", 'log.route']], function () {
         }
     }
 
-    Route::get('/queues/current', [\App\Http\Controllers\QueueController::class, 'current']);
     Route::post('/queues/next', [\App\Http\Controllers\QueueController::class, 'next']);
+    Route::post('/queues/complete', [\App\Http\Controllers\QueueController::class, 'complete']);
+    Route::post('/queues/skip', [\App\Http\Controllers\QueueController::class, 'skip']);
+    Route::post('/queues/recall', [\App\Http\Controllers\QueueController::class, 'recall']);
+    Route::post('/queues/transfer', [\App\Http\Controllers\QueueController::class, 'transfer']);
+
+    Route::match(['GET', 'POST'], '/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
 
     Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 'active']);
     Route::get('/counter-user-logs', [\App\Http\Controllers\CounterController::class, 'logs']);
@@ -91,8 +102,19 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 Route::match(['GET', 'POST'], '/pdf/queue', [\App\Http\Controllers\PDFController::class, 'queue']);
 Route::post('/queues/store', [\App\Http\Controllers\QueueController::class, 'store']);
 Route::get('/queues/show/{queues}', [\App\Http\Controllers\QueueController::class, 'show']);
+Route::get('/queues/current', [\App\Http\Controllers\QueueController::class, 'current']);
 
+Route::match(['GET', 'POST'], 'offices', [\App\Http\Controllers\OfficeController::class, 'index']);
+Route::match(['GET', 'POST'], 'offices/show/{office}', [\App\Http\Controllers\OfficeController::class, 'show']);
+Route::match(['GET', 'POST'], 'queues', [\App\Http\Controllers\QueueController::class, 'index']);
 Route::match(['GET', 'POST'], 'office-services', [\App\Http\Controllers\OfficeServiceController::class, 'index']);
+Route::match(['GET', 'POST'], 'displays', [\App\Http\Controllers\DisplayController::class, 'index']);
+Route::match(['GET', 'POST'], 'displays/show/{display}', [\App\Http\Controllers\DisplayController::class, 'show']);
+Route::match(['GET', 'POST'], 'announcements', [\App\Http\Controllers\AnnouncementController::class, 'index']);
+Route::match(['GET', 'POST'], 'announcements/show/{announcement}', [\App\Http\Controllers\AnnouncementController::class, 'show']);
+Route::match(['GET', 'POST'], 'counters', [\App\Http\Controllers\CounterController::class, 'index']);
+Route::match(['GET', 'POST'], 'counters/show/{counter}', [\App\Http\Controllers\CounterController::class, 'show']);
+Route::get('/counters/active', [\App\Http\Controllers\CounterController::class, 'active']);
 
 Route::match(['POST', 'GET'],'search', function(Request $request){
     $payload = $request->validate([

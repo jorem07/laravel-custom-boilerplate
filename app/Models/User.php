@@ -30,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at',
         'allow_login',
         'status',
+        'office_id',
         'created_by'
     ];
 

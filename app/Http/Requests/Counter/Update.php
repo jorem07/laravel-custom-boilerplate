@@ -36,12 +36,27 @@ class Update extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        if ($this->has('service_ids') && is_array($this->service_ids) && count($this->service_ids) > 0) {
+            $this->merge([
+                'office_service_id' => $this->office_service_id ?? $this->service_ids[0],
+            ]);
+        }
+    }
+
     public function rules(): array
     {
-        // Add your validation rules here
         $validate = [
-            'name'              => ['required', 'string', 'max:255', Rule::unique('counters')->ignore($this->id)->where(fn ($query) => $query->where('office_service_id', $this->office_service_id))->whereNull('deleted_at')],
-            'office_service_id' => ['required', Rule::exists('office_services', 'id')->whereNull('deleted_at')],
+            'name'              => ['required', 'string', 'max:255'],
+            'office_service_id' => ['nullable', Rule::exists('office_services', 'id')->whereNull('deleted_at')],
+            'service_ids'       => 'nullable|array',
+            'service_ids.*'     => 'numeric|exists:office_services,id,deleted_at,NULL',
+            'user_id'           => 'nullable|exists:users,id,deleted_at,NULL',
+            'office_id'         => 'nullable',
+            'status'            => 'nullable|string',
         ];   
         
         return array_merge($this->payloadTaits(), $validate);

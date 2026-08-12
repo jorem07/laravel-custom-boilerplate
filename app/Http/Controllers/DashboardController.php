@@ -14,10 +14,16 @@ class DashboardController extends Controller
     {
         $this->dashboardService = $dashboardService;
     }
-    public function getTotalData() : JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $data = $this->dashboardService->getDashboardMetrics($request->all());
+        return $this->getJsonResponse(['body' => $data]);
+    }
 
+    public function getTotalData(): JsonResponse
+    {
         $data = $this->dashboardService->getTotalData();
         return response()->json(compact('data'));
     }
 }
+

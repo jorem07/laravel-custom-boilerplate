@@ -45,6 +45,40 @@ class AuthService
                             'ip_address' => $ip_address
                         ]);
 
+                    $officeId = $user->office_id ?? null;
+                    if (!$officeId) {
+                        $counter = \App\Models\Counter::where('user_id', $user->id)->first();
+                        if ($counter) {
+                            if ($counter->office_service_id) {
+                                $officeId = \App\Models\OfficeService::where('id', $counter->office_service_id)->value('office_id');
+                            }
+                            if (!$officeId && !empty($counter->service_ids)) {
+                                $officeId = \App\Models\OfficeService::whereIn('id', $counter->service_ids)->value('office_id');
+                            }
+                        }
+                    }
+                    if (!$officeId) {
+                        $counterLog = \App\Models\CounterUserLog::where('user_id', $user->id)
+                            ->latest()
+                            ->first();
+                        if ($counterLog && $counterLog->counter_id) {
+                            $counter = \App\Models\Counter::find($counterLog->counter_id);
+                            if ($counter) {
+                                if ($counter->office_service_id) {
+                                    $officeId = \App\Models\OfficeService::where('id', $counter->office_service_id)->value('office_id');
+                                }
+                                if (!$officeId && !empty($counter->service_ids)) {
+                                    $officeId = \App\Models\OfficeService::whereIn('id', $counter->service_ids)->value('office_id');
+                                }
+                            }
+                        }
+                    }
+
+                    if ($officeId) {
+                        $user->office_id = (int) $officeId;
+                        \App\Models\User::where('id', $user->id)->update(['office_id' => $officeId]);
+                    }
+
                     return [
                         'message' => 'Logged in successfully.',
                         'user' => $user->load(['roles']),

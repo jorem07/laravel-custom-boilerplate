@@ -5,6 +5,8 @@ namespace App\Http\Requests\Queue;
 use App\Traits\PayloadTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
+use Illuminate\Validation\Rule;
+
 class Next extends FormRequest
 {
     use PayloadTrait {
@@ -19,8 +21,9 @@ class Next extends FormRequest
     public function rules(): array
     {
         return [
-            'counter_id' => 'required|exists:counters,id,deleted_at,NULL',
-            'user_id'    => 'nullable|exists:users,id,deleted_at,NULL',
+            'counter_id'  => ['required', Rule::exists('counters', 'id')->whereNull('deleted_at')],
+            'user_id'     => ['nullable', Rule::exists('users', 'id')->whereNull('deleted_at')],
+            'service_ids' => ['nullable', 'array'],
         ];
     }
 

@@ -27,16 +27,19 @@ class Store extends FormRequest
      */
     public function rules(): array
     {
-        // Add your validation rules here
         $validate = [
             'first_name'    => 'required|string',
-            'middle_name'   => 'required|string',
+            'middle_name'   => 'nullable|string',
             'last_name'     => 'required|string',
             'allow_login'   => 'required|boolean',
             'status'        => 'required|boolean',
-            'password'      => 'required|string|confirmed',
+            'password'      => 'required|string',
             'email'         => ['required', Rule::unique('users')->whereNull('deleted_at')],
-            'role_id'       => 'required|array|exists:roles,id,deleted_at,NULL'
+            'role_id'       => 'required|array',
+            'role_id.*'     => 'exists:roles,id,deleted_at,NULL',
+            'office_id'     => 'nullable|exists:offices,id,deleted_at,NULL',
+            'office_ids'    => 'nullable|array',
+            'office_ids.*'  => 'exists:offices,id,deleted_at,NULL',
         ];
         
         return array_merge($this->payloadTaits(), $validate);

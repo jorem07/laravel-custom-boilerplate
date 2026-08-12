@@ -22,7 +22,9 @@ trait RepositoryTrait
 
         if(isset($searchedIds)) $data->whereIn('id', $searchedIds);
             
-        $data->searchColumns($search);
+        if (method_exists($data, 'searchColumns') || (method_exists($data, 'hasMacro') && $data->hasMacro('searchColumns'))) {
+            $data->searchColumns($search);
+        }
 
         return $data;
     }
@@ -46,7 +48,8 @@ trait RepositoryTrait
 
     public function delete($id): bool
     {
-        return $this->model->where('id', $id)->delete();
+        $targetId = is_array($id) ? ($id['id'] ?? null) : $id;
+        return $this->model->where('id', $targetId)->delete();
     }
     
 

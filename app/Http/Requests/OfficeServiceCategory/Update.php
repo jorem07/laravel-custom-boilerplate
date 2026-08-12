@@ -5,13 +5,8 @@ namespace App\Http\Requests\OfficeServiceCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
-/**
- * Update
- *
- * This request class handles validation and authorization for the request.
- * You can override the authorize() and rules() methods as needed.
- */
 class Update extends FormRequest
 {
     use PayloadTrait {
@@ -35,13 +30,23 @@ class Update extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+        $targetId = $this->id ?? $this->route('office_service_categories') ?? $this->route('id');
+        if ($targetId) {
+            $this->merge(['id' => (int) $targetId]);
+        }
+    }
+
     public function rules(): array
     {
-        // Add your validation rules here
+        $targetId = $this->id ?? $this->route('office_service_categories') ?? $this->route('id');
         $validate = [
-            'type'  => 'required|unique:office_service_categories,type,' . $this->id . ',id,deleted_at,NULL'
+            'type'      => ['required', 'string', 'max:255', Rule::unique('office_service_categories', 'type')->ignore($targetId)->whereNull('deleted_at')],
+            'office_id' => 'nullable|exists:offices,id,deleted_at,NULL',
         ];
-        
+
         return array_merge($this->payloadTaits(), $validate);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Office;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
+use Illuminate\Validation\Rule;
 use App\Traits\PayloadTrait;
 
 /**
@@ -35,13 +36,22 @@ class Update extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+        $targetId = $this->id ?? $this->route('offices') ?? $this->route('id');
+        if ($targetId) {
+            $this->merge(['id' => (int) $targetId]);
+        }
+    }
+
     public function rules(): array
     {
-        // Add your validation rules here
+        $targetId = $this->id ?? $this->route('offices') ?? $this->route('id');
         $validate = [
-            'name' => 'required|unique:offices,name,'. $this->id . ',id,deleted_at,NULL',
+            'name' => ['required', 'string', 'max:255', Rule::unique('offices', 'name')->ignore($targetId)->whereNull('deleted_at')],
         ];
-        
+
         return array_merge($this->payloadTaits(), $validate);
     }
 }

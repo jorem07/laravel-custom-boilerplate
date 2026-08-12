@@ -33,7 +33,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#E3F2FD',
                 'scheduled_at' => Carbon::now()->subDays(3),
                 'expires_at' => Carbon::now()->addMonth(),
-                'created_by' => 3,
+                'created_by' => 1,
             ],
             [
                 'id' => 3,
@@ -45,7 +45,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#FFF3E0',
                 'scheduled_at' => Carbon::now()->subDays(4),
                 'expires_at' => Carbon::now()->addMonth(),
-                'created_by' => 4,
+                'created_by' => 1,
             ],
             [
                 'id' => 4,
@@ -57,7 +57,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#E3F2FD',
                 'scheduled_at' => Carbon::now()->addDays(2),
                 'expires_at' => Carbon::now()->addDays(3),
-                'created_by' => 2,
+                'created_by' => 1,
             ],
             [
                 'id' => 5,
@@ -81,7 +81,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#E3F2FD',
                 'scheduled_at' => null,
                 'expires_at' => null,
-                'created_by' => 5,
+                'created_by' => 1,
             ],
             [
                 'id' => 7,
@@ -93,7 +93,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#E8F5E9',
                 'scheduled_at' => null,
                 'expires_at' => null,
-                'created_by' => 6,
+                'created_by' => 1,
             ],
             [
                 'id' => 8,
@@ -105,7 +105,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#FFEBEE',
                 'scheduled_at' => Carbon::now()->subMonth(),
                 'expires_at' => Carbon::now()->subDays(10),
-                'created_by' => 3,
+                'created_by' => 1,
             ],
             [
                 'id' => 9,
@@ -117,7 +117,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#E3F2FD',
                 'scheduled_at' => Carbon::now()->subMonths(2),
                 'expires_at' => Carbon::now()->subMonth(),
-                'created_by' => 4,
+                'created_by' => 1,
             ],
             [
                 'id' => 10,
@@ -129,7 +129,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#FFF3E0',
                 'scheduled_at' => Carbon::now()->subMonths(3),
                 'expires_at' => Carbon::now()->subMonths(2),
-                'created_by' => 2,
+                'created_by' => 1,
             ],
         ];
 
@@ -147,7 +147,7 @@ class AnnouncementSeeder extends Seeder
                 'icon_bg_color' => '#E3F2FD',
                 'scheduled_at' => $status === 'Draft' ? null : Carbon::now()->subDays($i),
                 'expires_at' => $status === 'Draft' ? null : Carbon::now()->addDays($i),
-                'created_by' => ($i % 6) + 1,
+                'created_by' => 1,
             ];
         }
 

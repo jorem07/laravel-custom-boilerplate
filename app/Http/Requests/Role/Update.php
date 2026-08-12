@@ -30,7 +30,8 @@ class Update extends FormRequest
         // Add your validation rules here
         $validate = [
             'name'          => ['required', Rule::unique('roles')->ignore($this->id)->whereNull('deleted_at')],
-            'abilities'     => 'required|array',
+            'title'         => 'nullable|string',
+            'abilities'     => 'nullable|array',
             'abilities.*'   => ['numeric', Rule::exists('abilities', 'id')]
         ];
         

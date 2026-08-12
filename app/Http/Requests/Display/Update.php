@@ -21,8 +21,10 @@ class Update extends FormRequest
         return array_merge($this->payloadTaits(), [
             'id' => ['required', 'exists:displays,id'],
             'name' => 'sometimes|required|string|max:255',
+            'slug' => 'nullable|string|max:255',
             'location' => 'nullable|string',
             'status' => 'nullable|string',
+            'layout_type' => 'nullable|string',
             'connection_status' => 'nullable|string',
             'office_id' => 'nullable|exists:offices,id',
         ]);

@@ -43,7 +43,9 @@ class UserRepository implements UserRepositoryInterface
 
         if (isset($searchedIds)) $data->whereIn('id', $searchedIds);
 
-        $data->searchColumns($search);
+        if (method_exists($data, 'searchColumns') || (method_exists($data, 'hasMacro') && $data->hasMacro('searchColumns'))) {
+            $data->searchColumns($search);
+        }
 
         return $data;
     }
@@ -66,6 +68,21 @@ class UserRepository implements UserRepositoryInterface
 
     public function delete($id): bool
     {
-        return $this->model->where('id', $id)->update(['deleted_at' => \Carbon\Carbon::now()]);
+        $user = $this->model->find($id);
+        if (!$user) {
+            return false;
+        }
+
+        \App\Models\Counter::where('user_id', $user->id)->update(['user_id' => null]);
+
+        if (method_exists($user, 'roles')) {
+            $user->roles()->detach();
+        }
+
+        if (method_exists($user, 'tokens')) {
+            $user->tokens()->delete();
+        }
+
+        return (bool) $user->delete();
     }
 }

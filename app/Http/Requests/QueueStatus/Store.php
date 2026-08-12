@@ -39,7 +39,7 @@ class Store extends FormRequest
     {
         // Add your validation rules here
         $validate = [
-            'name'      => 'required|unique:queue_statuses,name,NULL,NULL,deleted_at,NULL',
+            'name'      => ['required', 'string', \Illuminate\Validation\Rule::unique('queue_statuses', 'name')->whereNull('deleted_at')],
         ];
         
         return array_merge($this->payloadTaits(), $validate);

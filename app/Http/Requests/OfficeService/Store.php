@@ -25,15 +25,51 @@ class Store extends FormRequest
      *
      * @return array
      */
+    public function prepareForValidation(): void
+    {
+        $this->payloadPrepareForValidation();
+
+        $rawReqs = $this->requirements ?? $this->requirement ?? [];
+        if (!is_array($rawReqs)) {
+            $rawReqs = [$rawReqs];
+        }
+
+        $normalized = collect($rawReqs)->map(function ($item) {
+            $text = is_array($item)
+                ? ($item['list'] ?? $item['name'] ?? $item['text'] ?? '')
+                : (string) $item;
+            $text = trim((string) $text);
+            if (!$text) return null;
+
+            $rawId = is_array($item) ? ($item['id'] ?? null) : null;
+            return [
+                'id' => $rawId ? (int) $rawId : null,
+                'list' => $text,
+            ];
+        })->filter()->values()->toArray();
+
+        if (empty($normalized)) {
+            $normalized = [
+                ['id' => null, 'list' => 'General Requirements']
+            ];
+        }
+
+        $this->merge(['requirements' => $normalized]);
+    }
+
     public function rules(): array
     {
-        // Add your validation rules here
         $validate = [
-            'name'                       => ['required', Rule::unique('office_services')->whereNull('deleted_at')],
+            'name'                       => ['required', 'string', Rule::unique('office_services')->where(fn ($q) => $q->where('office_id', $this->office_id))->whereNull('deleted_at')],
+            'code'                       => 'nullable|string|max:10',
             'office_id'                  => 'required|exists:offices,id,deleted_at,NULL',
             'office_service_category_id' => 'required|exists:office_service_categories,id,deleted_at,NULL',
-            'requirements'               => 'required|array',
-            'requirements.*.list'        => 'required|string'
+            'subtitle'                   => 'nullable|string',
+            'icon'                       => 'nullable|string',
+            'icon_color'                 => 'nullable|string',
+            'requirements'               => ['required', 'array', 'min:1'],
+            'requirements.*.id'          => 'nullable|numeric',
+            'requirements.*.list'        => 'required|string|max:255',
         ];
 
         return array_merge($this->payloadTaits(), $validate);
