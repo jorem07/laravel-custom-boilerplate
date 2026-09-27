@@ -84,17 +84,3 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     $request->fulfill();
     return response()->json(['message' => 'Email verified successfully.']);
 })->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
-
-Route::match(['POST', 'GET'],'search', function(Request $request){
-    $payload = $request->validate([
-        'resident_id_no'    => 'required',
-        'page'              => 'nullable',
-        'show'              => 'nullable'
-    ]);
-
-    $response = Http::post(env('BENEFICIARY_SEARCH_API'), $payload);
-
-    if(!$response->json()) abort(404, 'Data not found');
-
-    return response()->json($response->json());
-})->name('api.search');
