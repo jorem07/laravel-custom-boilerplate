@@ -5,6 +5,7 @@ namespace App\Http\Requests\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
 
 /**
  * Update
@@ -19,17 +20,6 @@ class Update extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.
      *
@@ -37,13 +27,23 @@ class Update extends FormRequest
      */
     public function rules(): array
     {
-        // Add your validation rules here
-        $validate = [];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:users,id'];
-        }
+        $validate = [
+            'first_name'      => 'required|string',
+            'middle_name'     => 'nullable|string',
+            'last_name'       => 'required|string',
+            'allow_login'     => 'required|boolean',
+            'status'          => 'required|boolean',
+            'current_password'=> 'nullable',
+            'new_password'    => 'nullable|string',
+            'password'        => 'nullable|string',
+            'email'           => ['required', Rule::unique('users')->ignore($this->id)->whereNull('deleted_at')],
+            'role_id'         => 'required|array',
+            'role_id.*'       => 'exists:roles,id,deleted_at,NULL',
+            'office_id'       => 'nullable|exists:offices,id,deleted_at,NULL',
+            'office_ids'      => 'nullable|array',
+            'office_ids.*'    => 'exists:offices,id,deleted_at,NULL',
+            'is_admin'        => 'nullable|boolean'
+        ];
         
         return array_merge($this->payloadTaits(), $validate);
     }
@@ -52,8 +52,17 @@ class Update extends FormRequest
     {
         $this->payloadPrepareForValidation();
 
-        $this->merge([
-            'id'    => $this->route('users')
-        ]);
+        $user = $this->user()?->load(['roles']);
+        $roles = $user ? $user->roles->pluck('name')->toArray() : [];
+
+        $merge = [
+            'is_admin' => (bool) array_intersect(['admin', 'super-admin'], $roles)
+        ];
+
+        if ($this->new_password) {
+            $merge['password'] = $this->new_password;
+        }
+
+        $this->merge($merge);
     }
 }

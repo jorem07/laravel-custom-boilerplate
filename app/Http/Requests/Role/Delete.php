@@ -19,17 +19,6 @@ class Delete extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.
      *
@@ -39,21 +28,7 @@ class Delete extends FormRequest
     {
         // Add your validation rules here
         $validate = [];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:roles,id'];
-        }
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('roles')
-        ]);
     }
 }

@@ -2,8 +2,9 @@
 
 namespace App\Repositories;
 
-use App\Models\Role;
-use App\Traits\QueryGenerator;
+use App\Repositories\Contracts\RoleRepositoryInterface;
+use App\Traits\RepositoryTrait;
+use Silber\Bouncer\Database\Role;
 
 /**
  * RoleRepository
@@ -11,10 +12,10 @@ use App\Traits\QueryGenerator;
  * This repository provides a base implementation for Role data access.
  * You can override or extend this class to customize query logic or add new methods.
  */
-class RoleRepository
+class RoleRepository implements RoleRepositoryInterface
 {
-    use QueryGenerator;
-
+    use RepositoryTrait;
+    
     // The Category model instance.
     protected Role $model;
     

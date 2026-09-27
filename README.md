@@ -1,3 +1,21 @@
+<h1>INSTRUCTION:</h1>
+<h3>API CRUD Generation</h3>
+<ul>
+    <li>First create a model: "php artisan make:model {model_name} -m"</li> <i>(Note: this will create model with migration)</i>
+    <li>Then create REST API: "php artisan app:request {model_name}"</li>
+</ul>
+
+<h3>Local / LAN / WiFi development</h3>
+<p>To allow phones and other PCs on the same WiFi to reach this API, bind to all interfaces:</p>
+<pre><code>composer run dev
+# or manually:
+php artisan serve --host=0.0.0.0 --port=8000
+php artisan reverb:start --host=0.0.0.0 --port=8080
+</code></pre>
+<p>Health check: <code>GET /api/health</code></p>
+<p>After switching WiFi, run <code>ipconfig</code> and open the frontend at <code>http://&lt;NEW_IP&gt;:3000</code>.</p>
+<p>Do not rely on <code>php artisan serve</code> without <code>--host=0.0.0.0</code>; default binding is localhost-only.</p>
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

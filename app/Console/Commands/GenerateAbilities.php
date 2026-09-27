@@ -42,6 +42,9 @@ class GenerateAbilities extends Command
         # Added for view temp first
         Permission::updateOrCreate([
             'ability_id' => 1,
+            'entity_id' => $super_admin->id
+        ], [
+            'ability_id' => 1,
             'entity_id' => $super_admin->id,
             'entity_type' => 'App\Models\Role'
         ]);

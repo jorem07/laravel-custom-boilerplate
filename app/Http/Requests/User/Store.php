@@ -3,8 +3,9 @@
 namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Bouncer;
 use App\Traits\PayloadTrait;
+use Illuminate\Validation\Rule;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 
 /**
  * Store
@@ -19,17 +20,6 @@ class Store extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     * Override this method to implement custom authorization logic.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      * Override this method to define custom validation rules.
      *
@@ -37,23 +27,21 @@ class Store extends FormRequest
      */
     public function rules(): array
     {
-        // Add your validation rules here
-        $validate = [];
-
-        $class = class_basename($this);
-        if ($class !== 'Store'  && $class !== 'Index') {
-            $validate['id'] = ['required', 'exists:users,id'];
-        }
+        $validate = [
+            'first_name'    => 'required|string',
+            'middle_name'   => 'nullable|string',
+            'last_name'     => 'required|string',
+            'allow_login'   => 'required|boolean',
+            'status'        => 'required|boolean',
+            'password'      => 'required|string',
+            'email'         => ['required', Rule::unique('users')->whereNull('deleted_at')],
+            'role_id'       => 'required|array',
+            'role_id.*'     => 'exists:roles,id,deleted_at,NULL',
+            'office_id'     => 'nullable|exists:offices,id,deleted_at,NULL',
+            'office_ids'    => 'nullable|array',
+            'office_ids.*'  => 'exists:offices,id,deleted_at,NULL',
+        ];
         
         return array_merge($this->payloadTaits(), $validate);
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->payloadPrepareForValidation();
-
-        $this->merge([
-            'id'    => $this->route('users')
-        ]);
     }
 }
